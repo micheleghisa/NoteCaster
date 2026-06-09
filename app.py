@@ -337,15 +337,29 @@ components.html("""
         };
 
         btn.onclick = function() {
+            // Selectors verified against Streamlit 1.58 source (stSidebarCollapsedControl
+            // does not exist in this version; correct names are below)
             var candidates = [
-                '[data-testid="stSidebarCollapsedControl"] button',
-                '[data-testid="collapsedControl"] button',
-                'button[aria-label="Open sidebar"]',
-                'button[aria-label="Apri sidebar"]',
+                '[data-testid="stSidebarCollapsed"]',
+                '[data-testid="stSidebarCollapsed"] button',
+                '[data-testid="stSidebarCollapseButton"]',
+                '[data-testid="stSidebarCollapseButton"] button',
             ];
             for (var i = 0; i < candidates.length; i++) {
                 var el = doc.querySelector(candidates[i]);
-                if (el) { el.click(); return; }
+                if (el) {
+                    el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window.parent}));
+                    return;
+                }
+            }
+            // Fallback: force sidebar open via CSS if button not found
+            if (!doc.getElementById('__sb_force')) {
+                var s = doc.createElement('style');
+                s.id = '__sb_force';
+                s.textContent = '[data-testid="stSidebar"]{transform:none!important;min-width:244px!important;visibility:visible!important}';
+                doc.head.appendChild(s);
+                // Remove override after 600ms so Streamlit's own state takes over
+                setTimeout(function(){ var x=doc.getElementById('__sb_force'); if(x) x.remove(); }, 600);
             }
         };
 
