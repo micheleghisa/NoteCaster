@@ -3,7 +3,6 @@ import tempfile
 from pathlib import Path
 
 import streamlit as st
-import streamlit.components.v1 as components
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -213,6 +212,15 @@ details[data-testid="stExpander"] {
     background: rgba(124,58,237,0.04) !important;
 }
 
+/* ── Sidebar always visible — hide collapse button ──────────────────────── */
+[data-testid="stSidebarCollapseButton"] { display: none !important; }
+[data-testid="stSidebarCollapsed"] { display: none !important; }
+[data-testid="stSidebar"] {
+    transform: none !important;
+    min-width: 244px !important;
+    visibility: visible !important;
+}
+
 /* ── Scrollbar ──────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -295,97 +303,6 @@ details[data-testid="stExpander"] {
 }
 </style>
 """, unsafe_allow_html=True)
-
-# ── Floating sidebar opener button (injected via component iframe) ─────────────
-components.html("""
-<script>
-(function() {
-    var doc = window.parent.document;
-
-    function ensureButton() {
-        if (doc.getElementById('_sb_opener')) return;
-
-        var btn = doc.createElement('button');
-        btn.id = '_sb_opener';
-        btn.title = 'Apri sidebar';
-        btn.innerHTML = '&#9654;&#9654;';
-        btn.style.cssText = [
-            'position:fixed',
-            'left:0',
-            'top:50%',
-            'transform:translateY(-50%)',
-            'z-index:2147483647',
-            'background:linear-gradient(160deg,#1a0533 0%,#1e1b4b 100%)',
-            'border:1px solid rgba(124,58,237,0.5)',
-            'border-left:none',
-            'border-radius:0 12px 12px 0',
-            'color:#c4b5fd',
-            'font-size:0.9rem',
-            'padding:0.75rem 0.4rem',
-            'cursor:pointer',
-            'box-shadow:4px 0 16px rgba(124,58,237,0.5)',
-            'display:none',
-            'line-height:1',
-            'transition:background 0.2s',
-        ].join(';');
-
-        btn.onmouseenter = function() {
-            btn.style.background = 'linear-gradient(160deg,#2d0a52 0%,#2d2a6e 100%)';
-        };
-        btn.onmouseleave = function() {
-            btn.style.background = 'linear-gradient(160deg,#1a0533 0%,#1e1b4b 100%)';
-        };
-
-        btn.onclick = function() {
-            // Selectors verified against Streamlit 1.58 source (stSidebarCollapsedControl
-            // does not exist in this version; correct names are below)
-            var candidates = [
-                '[data-testid="stSidebarCollapsed"]',
-                '[data-testid="stSidebarCollapsed"] button',
-                '[data-testid="stSidebarCollapseButton"]',
-                '[data-testid="stSidebarCollapseButton"] button',
-            ];
-            for (var i = 0; i < candidates.length; i++) {
-                var el = doc.querySelector(candidates[i]);
-                if (el) {
-                    el.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window.parent}));
-                    return;
-                }
-            }
-            // Fallback: force sidebar open via CSS if button not found
-            if (!doc.getElementById('__sb_force')) {
-                var s = doc.createElement('style');
-                s.id = '__sb_force';
-                s.textContent = '[data-testid="stSidebar"]{transform:none!important;min-width:244px!important;visibility:visible!important}';
-                doc.head.appendChild(s);
-                // Remove override after 600ms so Streamlit's own state takes over
-                setTimeout(function(){ var x=doc.getElementById('__sb_force'); if(x) x.remove(); }, 600);
-            }
-        };
-
-        doc.body.appendChild(btn);
-    }
-
-    function updateVisibility() {
-        var btn = doc.getElementById('_sb_opener');
-        if (!btn) { ensureButton(); btn = doc.getElementById('_sb_opener'); }
-        if (!btn) return;
-
-        var sidebar = doc.querySelector('[data-testid="stSidebar"]');
-        if (!sidebar) return;
-
-        var w = parseInt(window.parent.getComputedStyle(sidebar).width, 10);
-        btn.style.display = (w < 60) ? 'block' : 'none';
-    }
-
-    if (!window.parent._sbOpenerTimer) {
-        window.parent._sbOpenerTimer = setInterval(updateVisibility, 300);
-    }
-    ensureButton();
-    updateVisibility();
-})();
-</script>
-""", height=0)
 
 # ── Session state init ─────────────────────────────────────────────────────────
 st.session_state.setdefault("active_notebook", None)
