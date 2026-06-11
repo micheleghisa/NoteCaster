@@ -495,19 +495,35 @@ with tab_chat:
 # ── TAB: Note ─────────────────────────────────────────────────────────────────
 with tab_notes:
     st.subheader("📝 Note automatiche")
-    note_type = st.radio("Tipo di nota", NOTES_TYPES, horizontal=True, key="note_type_radio")
+
+    col_note_src, col_note_type = st.columns([1, 2])
+    note_source_options = ["📚 Tutte le sbobine"] + indexed_docs
+    note_source = col_note_src.selectbox(
+        "Sorgente",
+        note_source_options,
+        key="note_source",
+        help="Genera note su una sbobina specifica o su tutto il materiale",
+    )
+    note_type = col_note_type.radio("Tipo di nota", NOTES_TYPES, horizontal=True, key="note_type_radio")
+
+    note_cache_key = f"notes_{note_source}_{note_type}"
 
     if st.button("✨ Genera Note", type="primary", key="gen_notes"):
         with st.spinner(f"Generazione '{note_type}' in corso..."):
-            full_text = get_full_text(active_nb["id"])
-            if not full_text.strip():
-                st.warning("Nessun documento indicizzato. Carica prima dei file.")
+            if note_source == "📚 Tutte le sbobine":
+                source_text = get_full_text(active_nb["id"])
             else:
-                notes = generate_notes(full_text, note_type)
-                st.session_state[f"notes_{note_type}"] = notes
+                source_text = get_doc_text(active_nb["id"], note_source)
 
-    if f"notes_{note_type}" in st.session_state:
-        notes_content = st.session_state[f"notes_{note_type}"]
+            if not source_text.strip():
+                st.warning("Nessun testo disponibile per la sorgente selezionata.")
+            else:
+                notes = generate_notes(source_text, note_type)
+                st.session_state[note_cache_key] = notes
+
+    if note_cache_key in st.session_state:
+        notes_content = st.session_state[note_cache_key]
+        source_label = note_source if note_source != "📚 Tutte le sbobine" else active_nb['name']
         st.markdown(
             f'<div style="background:rgba(255,255,255,0.85);border:1px solid rgba(124,58,237,0.2);'
             f'border-radius:16px;padding:1.5rem 2rem;backdrop-filter:blur(8px);'
@@ -518,7 +534,7 @@ with tab_notes:
         st.download_button(
             "⬇️ Scarica note",
             data=notes_content,
-            file_name=f"{active_nb['name']}_{note_type.replace(' ', '_')}.md",
+            file_name=f"{source_label}_{note_type.replace(' ', '_')}.md",
             mime="text/markdown",
         )
 
