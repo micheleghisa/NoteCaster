@@ -259,7 +259,10 @@ if "user" not in st.session_state:
         st.session_state["_cookie_init"] = True
         st.rerun()
 
-    saved_token = _cookies.get("nc_refresh")
+    try:
+        saved_token = _cookies.get("nc_refresh")
+    except (TypeError, AttributeError):
+        saved_token = None
     if saved_token:
         try:
             res = refresh_session(saved_token)
