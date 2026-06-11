@@ -26,7 +26,7 @@ from src.llm_client import chat_stream
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="StudyLM — Podcast dalle sbobbine",
+    page_title="NoteCaster — Podcast dalle sbobbine",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -211,7 +211,7 @@ with st.sidebar:
     st.markdown("""
     <div style="text-align:center; padding: 1.2rem 0.5rem 0.8rem;">
         <div style="font-size: 2.4rem; margin-bottom:4px;">🎙️</div>
-        <div style="font-size: 1.4rem; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">StudyLM</div>
+        <div style="font-size: 1.4rem; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">NoteCaster</div>
         <div style="font-size: 0.72rem; color: #8b7aa8; margin-top: 2px;">Podcast dalle sbobbine · Powered by DeepSeek</div>
     </div>
     """, unsafe_allow_html=True)
@@ -343,7 +343,7 @@ if not st.session_state.active_notebook:
             background: linear-gradient(135deg, #7c3aed 0%, #6366f1 40%, #0d9488 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text; margin: 0 0 0.6rem; letter-spacing: -1.5px;
-        ">StudyLM</h1>
+        ">NoteCaster</h1>
         <p style="font-size: 1.1rem; color: #6b7280; max-width: 480px; margin: 0 auto 2.5rem;">
             Trasforma le tue sbobbine in un podcast con due host AI — come NotebookLM, ma gratis e in italiano.
         </p>
