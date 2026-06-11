@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from src.db import create_notebook, get_notebooks, delete_notebook
 from src.auth import sign_in, sign_up, refresh_session
-import extra_streamlit_components as stx
+from streamlit_cookies_controller import CookieController
 import datetime
 from src.document_processor import extract_text, chunk_text
 from src.storage import (
@@ -32,7 +32,7 @@ st.set_page_config(
     page_title="NoteCaster — Podcast dalle sbobbine",
     page_icon="🎙️",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 # ── CSS ────────────────────────────────────────────────────────────────────────
@@ -152,12 +152,59 @@ details[data-testid="stExpander"] {
     background: rgba(124,58,237,0.04) !important;
 }
 
-[data-testid="stSidebarCollapseButton"] { display: none !important; }
-[data-testid="stSidebarCollapsed"] { display: none !important; }
-[data-testid="stSidebar"] {
-    transform: none !important;
-    min-width: 244px !important;
-    visibility: visible !important;
+/* ── Responsive sidebar ───────────────────────────────────────── */
+
+/* Desktop ≥ 1024 px: sidebar sempre aperta, nessun bottone toggle */
+@media (min-width: 1024px) {
+    [data-testid="stSidebarCollapseButton"] { display: none !important; }
+    [data-testid="stSidebarCollapsed"]       { display: none !important; }
+    [data-testid="stSidebar"] {
+        transform: none !important;
+        min-width: 244px !important;
+        visibility: visible !important;
+    }
+}
+
+/* Tablet 768–1023 px: sidebar collassabile, mostra il bottone toggle */
+@media (min-width: 768px) and (max-width: 1023px) {
+    [data-testid="stSidebarCollapseButton"] {
+        display: flex !important;
+        color: #c4b5fd !important;
+    }
+    [data-testid="stSidebarCollapseButton"] svg { fill: #c4b5fd !important; }
+}
+
+/* Mobile < 768 px: sidebar nascosta di default, hamburger stilizzato */
+@media (max-width: 767px) {
+    [data-testid="stSidebarCollapseButton"] { display: flex !important; }
+
+    /* Bottone hamburger (appare quando la sidebar è chiusa) */
+    [data-testid="collapsedControl"] {
+        background: linear-gradient(135deg, #7c3aed, #6366f1) !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 12px rgba(124,58,237,0.4) !important;
+        padding: 4px !important;
+    }
+    [data-testid="collapsedControl"] svg { fill: #ffffff !important; }
+
+    /* Le colonne Streamlit diventano verticali su mobile */
+    [data-testid="stHorizontalBlock"] { flex-direction: column !important; }
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        width: 100% !important;
+        flex: none !important;
+        min-width: 100% !important;
+    }
+
+    /* Respiro extra in cima al contenuto principale */
+    .main .block-container { padding-top: 2rem !important; }
+}
+
+/* Hint sidebar: visibilità responsive */
+.hint-desktop { display: inline !important; }
+.hint-mobile  { display: none !important; }
+@media (max-width: 767px) {
+    .hint-desktop { display: none !important; }
+    .hint-mobile  { display: inline !important; }
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -203,21 +250,26 @@ details[data-testid="stExpander"] {
 """, unsafe_allow_html=True)
 
 # ── Auth ───────────────────────────────────────────────────────────────────────
-cm = stx.CookieManager()
+_cookies = CookieController()
 
 if "user" not in st.session_state:
-    # Prova a ripristinare la sessione dal cookie
-    saved_token = cm.get("nc_refresh")
+    # CookieController needs one render cycle to read browser cookies via JS.
+    # On first load the component hasn't fired yet, so we force a single rerun.
+    if not st.session_state.get("_cookie_init"):
+        st.session_state["_cookie_init"] = True
+        st.rerun()
+
+    saved_token = _cookies.get("nc_refresh")
     if saved_token:
         try:
             res = refresh_session(saved_token)
             if res.user:
                 st.session_state["user"] = {"id": str(res.user.id), "email": res.user.email}
-                cm.set("nc_refresh", res.session.refresh_token,
-                       expires_at=datetime.datetime.now() + datetime.timedelta(days=30))
+                _cookies.set("nc_refresh", res.session.refresh_token,
+                             max_age=30 * 24 * 60 * 60)
                 st.rerun()
         except Exception:
-            cm.delete("nc_refresh")
+            _cookies.remove("nc_refresh")
 
 if "user" not in st.session_state:
     st.markdown("""
@@ -257,8 +309,8 @@ if "user" not in st.session_state:
                             "id": str(res.user.id),
                             "email": res.user.email,
                         }
-                        cm.set("nc_refresh", res.session.refresh_token,
-                               expires_at=datetime.datetime.now() + datetime.timedelta(days=30))
+                        _cookies.set("nc_refresh", res.session.refresh_token,
+                                     max_age=30 * 24 * 60 * 60)
                         st.rerun()
                 except Exception as e:
                     st.error(f"Errore: {e}")
@@ -287,7 +339,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     if st.button("Esci", use_container_width=True):
-        cm.delete("nc_refresh")
+        _cookies.remove("nc_refresh")
         del st.session_state["user"]
         st.session_state.active_notebook = None
         st.session_state.chat_history = []
@@ -465,9 +517,17 @@ if not st.session_state.active_notebook:
         border: 1.5px solid rgba(124,58,237,0.2); border-radius: 14px;
         padding: 1rem 1.5rem; text-align: center; max-width: 400px; margin: 2rem auto 0;
     ">
-        <span style="font-size: 1.1rem;">👈</span>
-        <span style="font-weight: 700; color: #4c1d95; font-size: 0.9rem; margin-left: 0.4rem;">
-            Inizia dalla sidebar
+        <span class="hint-desktop">
+            <span style="font-size: 1.1rem;">👈</span>
+            <span style="font-weight: 700; color: #4c1d95; font-size: 0.9rem; margin-left: 0.4rem;">
+                Inizia dalla sidebar
+            </span>
+        </span>
+        <span class="hint-mobile">
+            <span style="font-size: 1.1rem;">☰</span>
+            <span style="font-weight: 700; color: #4c1d95; font-size: 0.9rem; margin-left: 0.4rem;">
+                Tocca ☰ in alto a sinistra
+            </span>
         </span>
     </div>
     """, unsafe_allow_html=True)
