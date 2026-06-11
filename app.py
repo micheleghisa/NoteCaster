@@ -433,7 +433,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-tab_chat, tab_notes, tab_podcast = st.tabs(["💬 Chat", "📝 Note", "🎙️ Podcast"])
+tab_chat, tab_podcast = st.tabs(["💬 Chat", "🎙️ Podcast"])
 
 indexed_docs = get_indexed_docs(active_nb["id"])
 has_docs = len(indexed_docs) > 0
@@ -491,52 +491,6 @@ with tab_chat:
             st.session_state.chat_history.append(
                 {"role": "assistant", "content": full_response}
             )
-
-# ── TAB: Note ─────────────────────────────────────────────────────────────────
-with tab_notes:
-    st.subheader("📝 Note automatiche")
-
-    col_note_src, col_note_type = st.columns([1, 2])
-    note_source_options = ["📚 Tutte le sbobine"] + indexed_docs
-    note_source = col_note_src.selectbox(
-        "Sorgente",
-        note_source_options,
-        key="note_source",
-        help="Genera note su una sbobina specifica o su tutto il materiale",
-    )
-    note_type = col_note_type.radio("Tipo di nota", NOTES_TYPES, horizontal=True, key="note_type_radio")
-
-    note_cache_key = f"notes_{note_source}_{note_type}"
-
-    if st.button("✨ Genera Note", type="primary", key="gen_notes"):
-        with st.spinner(f"Generazione '{note_type}' in corso..."):
-            if note_source == "📚 Tutte le sbobine":
-                source_text = get_full_text(active_nb["id"])
-            else:
-                source_text = get_doc_text(active_nb["id"], note_source)
-
-            if not source_text.strip():
-                st.warning("Nessun testo disponibile per la sorgente selezionata.")
-            else:
-                notes = generate_notes(source_text, note_type)
-                st.session_state[note_cache_key] = notes
-
-    if note_cache_key in st.session_state:
-        notes_content = st.session_state[note_cache_key]
-        source_label = note_source if note_source != "📚 Tutte le sbobine" else active_nb['name']
-        st.markdown(
-            f'<div style="background:rgba(255,255,255,0.85);border:1px solid rgba(124,58,237,0.2);'
-            f'border-radius:16px;padding:1.5rem 2rem;backdrop-filter:blur(8px);'
-            f'box-shadow:0 4px 20px rgba(124,58,237,0.08);margin-top:1rem;">'
-            f'{notes_content}</div>',
-            unsafe_allow_html=True,
-        )
-        st.download_button(
-            "⬇️ Scarica note",
-            data=notes_content,
-            file_name=f"{source_label}_{note_type.replace(' ', '_')}.md",
-            mime="text/markdown",
-        )
 
 # ── TAB: Podcast ───────────────────────────────────────────────────────────────
 with tab_podcast:
