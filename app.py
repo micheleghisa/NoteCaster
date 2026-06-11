@@ -11,6 +11,9 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 from src.db import create_notebook, get_notebooks, delete_notebook
+from src.auth import sign_in, sign_up, refresh_session
+import extra_streamlit_components as stx
+import datetime
 from src.document_processor import extract_text, chunk_text
 from src.storage import (
     index_document,
@@ -199,6 +202,70 @@ details[data-testid="stExpander"] {
 </style>
 """, unsafe_allow_html=True)
 
+# ── Auth ───────────────────────────────────────────────────────────────────────
+cm = stx.CookieManager()
+
+if "user" not in st.session_state:
+    # Prova a ripristinare la sessione dal cookie
+    saved_token = cm.get("nc_refresh")
+    if saved_token:
+        try:
+            res = refresh_session(saved_token)
+            if res.user:
+                st.session_state["user"] = {"id": str(res.user.id), "email": res.user.email}
+                cm.set("nc_refresh", res.session.refresh_token,
+                       expires_at=datetime.datetime.now() + datetime.timedelta(days=30))
+                st.rerun()
+        except Exception:
+            cm.delete("nc_refresh")
+
+if "user" not in st.session_state:
+    st.markdown("""
+    <div style="max-width:400px; margin: 5rem auto 0; text-align:center;">
+        <div style="font-size:2.8rem; margin-bottom:0.4rem;">🎙️</div>
+        <h1 style="
+            font-size:2rem; font-weight:900; margin:0 0 0.3rem;
+            background: linear-gradient(135deg, #7c3aed, #6366f1, #0d9488);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+        ">NoteCaster</h1>
+        <p style="color:#6b7280; font-size:0.9rem; margin-bottom:2rem;">
+            Accedi o crea un account per iniziare
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    _col = st.columns([1, 2, 1])[1]
+    with _col:
+        _mode = st.radio("", ["Accedi", "Registrati"], horizontal=True, label_visibility="collapsed")
+        _email = st.text_input("Email", placeholder="nome@esempio.com")
+        _pwd = st.text_input("Password", type="password", placeholder="Almeno 6 caratteri")
+
+        if st.button("Entra" if _mode == "Accedi" else "Crea account", type="primary", use_container_width=True):
+            if not _email or not _pwd:
+                st.error("Inserisci email e password.")
+            else:
+                try:
+                    if _mode == "Accedi":
+                        res = sign_in(_email, _pwd)
+                    else:
+                        res = sign_up(_email, _pwd)
+
+                    if res.user is None:
+                        st.error("Credenziali non valide o account già esistente.")
+                    else:
+                        st.session_state["user"] = {
+                            "id": str(res.user.id),
+                            "email": res.user.email,
+                        }
+                        cm.set("nc_refresh", res.session.refresh_token,
+                               expires_at=datetime.datetime.now() + datetime.timedelta(days=30))
+                        st.rerun()
+                except Exception as e:
+                    st.error(f"Errore: {e}")
+    st.stop()
+
+user = st.session_state["user"]
+
 # ── Session state ──────────────────────────────────────────────────────────────
 st.session_state.setdefault("active_notebook", None)
 st.session_state.setdefault("chat_history", [])
@@ -212,9 +279,19 @@ with st.sidebar:
     <div style="text-align:center; padding: 1.2rem 0.5rem 0.8rem;">
         <div style="font-size: 2.4rem; margin-bottom:4px;">🎙️</div>
         <div style="font-size: 1.4rem; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">NoteCaster</div>
-        <div style="font-size: 0.72rem; color: #8b7aa8; margin-top: 2px;">Podcast dalle sbobbine · Powered by DeepSeek</div>
+        <div style="font-size: 0.72rem; color: #8b7aa8; margin-top: 2px;">Podcast dalle sbobbine</div>
     </div>
     """, unsafe_allow_html=True)
+    st.markdown(
+        f'<p style="font-size:0.7rem; color:#8b7aa8; text-align:center; margin:0 0 4px;">{user["email"]}</p>',
+        unsafe_allow_html=True,
+    )
+    if st.button("Esci", use_container_width=True):
+        cm.delete("nc_refresh")
+        del st.session_state["user"]
+        st.session_state.active_notebook = None
+        st.session_state.chat_history = []
+        st.rerun()
 
     st.divider()
 
@@ -232,7 +309,7 @@ with st.sidebar:
     )
     if col2.button("＋", use_container_width=True):
         if name_input.strip():
-            nb = create_notebook(name_input.strip())
+            nb = create_notebook(name_input.strip(), user_id=user["id"])
             st.session_state.active_notebook = nb
             st.rerun()
 
@@ -243,7 +320,7 @@ with st.sidebar:
         'letter-spacing:1.2px; color:#c4b5fd; margin-bottom:6px;">I tuoi Notebook</p>',
         unsafe_allow_html=True,
     )
-    notebooks = get_notebooks()
+    notebooks = get_notebooks(user_id=user["id"])
     if not notebooks:
         st.info("Nessun notebook. Creane uno sopra.")
     else:
@@ -268,7 +345,7 @@ with st.sidebar:
                 st.warning(f"Eliminare '{nb['name']}'?")
                 cc1, cc2 = st.columns(2)
                 if cc1.button("Sì, elimina", key=f"yes_del_{nb['id']}", type="primary"):
-                    delete_notebook(nb["id"])
+                    delete_notebook(nb["id"], user_id=user["id"])
                     delete_notebook_index(nb["id"])
                     if (st.session_state.active_notebook or {}).get("id") == nb["id"]:
                         st.session_state.active_notebook = None

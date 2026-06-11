@@ -1,57 +1,48 @@
 import os
-import shutil
+import datetime
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
-os.makedirs(DATA_DIR, exist_ok=True)
+from dotenv import load_dotenv
+from supabase import create_client, Client
 
+load_dotenv()
 
-def _nb_dir(notebook_id: str) -> str:
-    path = os.path.join(DATA_DIR, notebook_id)
-    os.makedirs(path, exist_ok=True)
-    return path
+_client: Client | None = None
 
 
-def _doc_path(notebook_id: str, doc_name: str) -> str:
-    safe = doc_name.replace('/', '_').replace('\\', '_')
-    return os.path.join(_nb_dir(notebook_id), safe + '.txt')
+def _get_client() -> Client:
+    global _client
+    if _client is None:
+        url = os.environ["SUPABASE_URL"]
+        key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+        _client = create_client(url, key)
+    return _client
 
 
 def index_document(notebook_id: str, doc_name: str, chunks: list) -> int:
-    text = '\n\n'.join(chunks)
-    with open(_doc_path(notebook_id, doc_name), 'w', encoding='utf-8') as f:
-        f.write(text)
+    content = '\n\n'.join(chunks)
+    client = _get_client()
+    client.table("documents").upsert({
+        "notebook_id": notebook_id,
+        "doc_name": doc_name,
+        "content": content,
+        "created_at": datetime.datetime.now().isoformat(),
+    }, on_conflict="notebook_id,doc_name").execute()
     return len(chunks)
 
 
 def get_indexed_docs(notebook_id: str) -> list:
-    nb_dir = os.path.join(DATA_DIR, notebook_id)
-    if not os.path.exists(nb_dir):
-        return []
-    return sorted(
-        fname[:-4]
-        for fname in os.listdir(nb_dir)
-        if fname.endswith('.txt')
-    )
+    result = _get_client().table("documents").select("doc_name").eq("notebook_id", notebook_id).order("doc_name").execute()
+    return [row["doc_name"] for row in result.data]
 
 
 def get_doc_text(notebook_id: str, doc_name: str) -> str:
-    path = _doc_path(notebook_id, doc_name)
-    if not os.path.exists(path):
-        return ''
-    with open(path, 'r', encoding='utf-8') as f:
-        return f.read()
+    result = _get_client().table("documents").select("content").eq("notebook_id", notebook_id).eq("doc_name", doc_name).execute()
+    return result.data[0]["content"] if result.data else ""
 
 
 def get_full_text(notebook_id: str) -> str:
-    nb_dir = os.path.join(DATA_DIR, notebook_id)
-    if not os.path.exists(nb_dir):
-        return ''
-    texts = []
-    for fname in sorted(os.listdir(nb_dir)):
-        if fname.endswith('.txt'):
-            with open(os.path.join(nb_dir, fname), 'r', encoding='utf-8') as f:
-                texts.append(f.read())
-    return '\n\n'.join(texts)
+    result = _get_client().table("documents").select("content").eq("notebook_id", notebook_id).order("doc_name").execute()
+    return '\n\n'.join(row["content"] for row in result.data)
 
 
 def query_context(notebook_id: str, question: str, n_results: int = 6) -> str:
@@ -85,6 +76,4 @@ def query_context(notebook_id: str, question: str, n_results: int = 6) -> str:
 
 
 def delete_notebook_index(notebook_id: str) -> None:
-    nb_dir = os.path.join(DATA_DIR, notebook_id)
-    if os.path.exists(nb_dir):
-        shutil.rmtree(nb_dir)
+    _get_client().table("documents").delete().eq("notebook_id", notebook_id).execute()
