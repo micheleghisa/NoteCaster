@@ -54,6 +54,36 @@ def get_full_text(notebook_id: str) -> str:
     return '\n\n'.join(texts)
 
 
+def query_context(notebook_id: str, question: str, n_results: int = 6) -> str:
+    """Keyword-based context retrieval — scores stored chunks by word overlap with the question."""
+    full_text = get_full_text(notebook_id)
+    if not full_text:
+        return ""
+
+    chunks = [c.strip() for c in full_text.split('\n\n') if len(c.strip()) > 80]
+    if not chunks:
+        return full_text[:4000]
+
+    _STOP = {
+        'il', 'la', 'lo', 'le', 'i', 'gli', 'un', 'una', 'di', 'a', 'da', 'in',
+        'con', 'su', 'per', 'tra', 'fra', 'che', 'e', 'è', 'non', 'si', 'del',
+        'della', 'dei', 'degli', 'al', 'alla', 'ai', 'agli', 'nel', 'nella',
+        'the', 'a', 'an', 'of', 'to', 'in', 'for', 'is', 'it', 'be', 'as',
+        'at', 'so', 'we', 'he', 'by', 'or', 'do', 'and', 'are', 'with', 'this',
+    }
+    question_words = {w for w in question.lower().split() if w not in _STOP and len(w) > 2}
+
+    scored = []
+    for chunk in chunks:
+        chunk_words = set(chunk.lower().split())
+        score = len(question_words & chunk_words)
+        scored.append((score, chunk))
+
+    scored.sort(reverse=True)
+    top = [c for _, c in scored[:n_results]]
+    return '\n\n---\n\n'.join(top)
+
+
 def delete_notebook_index(notebook_id: str) -> None:
     nb_dir = os.path.join(DATA_DIR, notebook_id)
     if os.path.exists(nb_dir):

@@ -17,9 +17,12 @@ from src.storage import (
     get_indexed_docs,
     get_full_text,
     get_doc_text,
+    query_context,
     delete_notebook_index,
 )
 from src.podcast_generator import generate_podcast, DETAIL_LEVELS_IT, DETAIL_LEVELS_EN
+from src.notes_generator import generate_notes, NOTES_TYPES
+from src.llm_client import chat_stream
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -198,6 +201,8 @@ details[data-testid="stExpander"] {
 
 # ── Session state ──────────────────────────────────────────────────────────────
 st.session_state.setdefault("active_notebook", None)
+st.session_state.setdefault("chat_history", [])
+st.session_state.setdefault("last_notebook_id", None)
 
 NB_COLORS = ["#7c3aed", "#2563eb", "#0d9488", "#ea580c", "#db2777", "#d97706"]
 
@@ -393,6 +398,11 @@ if not st.session_state.active_notebook:
 
 active_nb = st.session_state.active_notebook
 
+# Clear chat history when switching notebooks
+if st.session_state.last_notebook_id != active_nb["id"]:
+    st.session_state.chat_history = []
+    st.session_state.last_notebook_id = active_nb["id"]
+
 # ── Notebook header ────────────────────────────────────────────────────────────
 nb_doc_count = len(get_indexed_docs(active_nb["id"]))
 st.markdown(f"""
@@ -423,126 +433,199 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ── Podcast UI ─────────────────────────────────────────────────────────────────
+tab_chat, tab_notes, tab_podcast = st.tabs(["💬 Chat", "📝 Note", "🎙️ Podcast"])
+
 indexed_docs = get_indexed_docs(active_nb["id"])
+has_docs = len(indexed_docs) > 0
 
-if not indexed_docs:
-    st.markdown("""
-    <div style="
-        background: rgba(255,255,255,0.7); border: 1.5px dashed rgba(124,58,237,0.35);
-        border-radius: 16px; padding: 2.5rem; text-align: center;
-    ">
-        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📄</div>
-        <div style="font-weight: 700; color: #4c1d95; font-size: 1.05rem; margin-bottom: 0.4rem;">
-            Nessuna sbobina ancora
-        </div>
-        <div style="color: #6d28d9; font-size: 0.88rem;">
-            Carica i tuoi materiali dalla sidebar per generare il podcast.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    st.stop()
+# ── TAB: Chat ──────────────────────────────────────────────────────────────────
+with tab_chat:
+    for msg in st.session_state.chat_history:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
 
-col_lang, col_detail = st.columns([1, 2])
-lang = col_lang.selectbox(
-    "Lingua",
-    ["Auto-detect", "Italiano", "English"],
-    key="podcast_lang",
-)
-detail_options = list(DETAIL_LEVELS_EN.keys()) if lang == "English" else list(DETAIL_LEVELS_IT.keys())
-detail_level = col_detail.selectbox(
-    "Livello di dettaglio",
-    detail_options,
-    index=1,
-    key="podcast_detail",
-)
+    col_input, col_clear = st.columns([5, 1])
+    if col_clear.button("🗑 Pulisci", key="clear_chat"):
+        st.session_state.chat_history = []
+        st.rerun()
 
-source_options = ["📚 Tutte le sbobine"] + indexed_docs
-source_doc = st.selectbox(
-    "Sorgente",
-    source_options,
-    key="podcast_source",
-    help="Seleziona una sbobina specifica o usa tutto il materiale del notebook",
-)
+    chat_placeholder = (
+        "Fai una domanda sui tuoi documenti..."
+        if has_docs else "Carica prima dei documenti nella sidebar"
+    )
+    if prompt := st.chat_input(chat_placeholder):
+        if not has_docs:
+            st.warning("Carica prima dei documenti nel notebook (vedi sidebar).")
+        else:
+            st.session_state.chat_history.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
 
-topic = st.text_input(
-    "Argomento (opzionale)",
-    placeholder="Es: Stenosi aortica, Shock cardiogeno, Patologie dell'aorta...",
-    key="podcast_topic",
-    help="Lascia vuoto per coprire tutto il materiale. Specifica un argomento per focalizzare il podcast.",
-)
+            with st.chat_message("assistant"):
+                context = query_context(active_nb["id"], prompt, n_results=6)
+                system = (
+                    "Sei un assistente di studio per studenti universitari. "
+                    "Rispondi SOLO basandoti sui documenti forniti nel contesto. "
+                    "Se l'informazione non è nei documenti, dillo esplicitamente. "
+                    "Sii preciso, utile e cita i concetti chiave. "
+                    "Usa Markdown per strutturare le risposte complesse."
+                )
+                messages = [{"role": "system", "content": system}]
+                for h in st.session_state.chat_history[-8:]:
+                    messages.append({"role": h["role"], "content": h["content"]})
+                messages[-1]["content"] = (
+                    f"Contesto dai documenti:\n{context}\n\nDomanda: {prompt}"
+                )
 
-_TIME_HINTS = {
-    "Panoramica": "~3-5 min",
-    "Approfondito": "~12-18 min",
-    "Completo": "~30-40 min",
-    "Dettagliato (esame)": "~20-28 min per sezione",
-    "Overview": "~3-5 min",
-    "In-depth": "~12-18 min",
-    "Complete": "~30-40 min",
-    "Detailed (exam)": "~20-28 min per section",
-}
-st.markdown(
-    f'<div class="time-pill">⏱ Durata stimata: {_TIME_HINTS.get(detail_level, "—")}</div>',
-    unsafe_allow_html=True,
-)
+                response_placeholder = st.empty()
+                full_response = ""
+                try:
+                    for chunk in chat_stream(messages, temperature=0.3):
+                        full_response += chunk
+                        response_placeholder.markdown(full_response + "▌")
+                    response_placeholder.markdown(full_response)
+                except Exception as e:
+                    full_response = f"Errore: {e}"
+                    response_placeholder.error(full_response)
 
-if st.button("🎙️ Genera Podcast", type="primary", use_container_width=True):
-    lang_map = {"Auto-detect": "auto", "Italiano": "it", "English": "en"}
-    lang_code = lang_map[lang]
-
-    if source_doc == "📚 Tutte le sbobine":
-        full_text = get_full_text(active_nb["id"])
-    else:
-        full_text = get_doc_text(active_nb["id"], source_doc)
-
-    if not full_text.strip():
-        st.error("Nessun testo disponibile per la sorgente selezionata.")
-    else:
-        progress_bar = st.progress(0, text="Avvio generazione...")
-        status_placeholder = st.empty()
-
-        def audio_progress(done, total):
-            pct = 0.45 + (done / total) * 0.50
-            progress_bar.progress(pct, text=f"Sintesi audio: battuta {done}/{total}...")
-
-        def on_status(msg: str):
-            is_script = "script" in msg.lower() or "segmento" in msg.lower() or "generazione" in msg.lower()
-            if is_script:
-                progress_bar.progress(0.10, text=msg)
-            status_placeholder.info(f"⏳ {msg}")
-
-        try:
-            script, audio_path = generate_podcast(
-                full_text=full_text,
-                notebook_id=active_nb["id"],
-                language=lang_code,
-                topic=topic,
-                detail_level=detail_level,
-                progress_cb=audio_progress,
-                status_cb=on_status,
+            st.session_state.chat_history.append(
+                {"role": "assistant", "content": full_response}
             )
-            progress_bar.progress(1.0, text="Podcast pronto!")
-            status_placeholder.success("✅ Podcast generato!")
-            st.session_state["last_podcast_script"] = script
-            st.session_state["last_podcast_path"] = audio_path
-        except Exception as e:
-            progress_bar.empty()
-            status_placeholder.error(f"Errore: {e}")
 
-# ── Podcast player ─────────────────────────────────────────────────────────────
-if "last_podcast_path" in st.session_state and os.path.exists(
-    st.session_state["last_podcast_path"]
-):
-    st.markdown('<div class="podcast-card">', unsafe_allow_html=True)
-    st.audio(st.session_state["last_podcast_path"])
-    with open(st.session_state["last_podcast_path"], "rb") as f:
-        st.download_button(
-            "⬇️ Scarica MP3",
-            data=f,
-            file_name=Path(st.session_state["last_podcast_path"]).name,
-            mime="audio/mpeg",
+# ── TAB: Note ─────────────────────────────────────────────────────────────────
+with tab_notes:
+    st.subheader("📝 Note automatiche")
+    note_type = st.radio("Tipo di nota", NOTES_TYPES, horizontal=True, key="note_type_radio")
+
+    if st.button("✨ Genera Note", type="primary", key="gen_notes"):
+        with st.spinner(f"Generazione '{note_type}' in corso..."):
+            full_text = get_full_text(active_nb["id"])
+            if not full_text.strip():
+                st.warning("Nessun documento indicizzato. Carica prima dei file.")
+            else:
+                notes = generate_notes(full_text, note_type)
+                st.session_state[f"notes_{note_type}"] = notes
+
+    if f"notes_{note_type}" in st.session_state:
+        notes_content = st.session_state[f"notes_{note_type}"]
+        st.markdown(
+            f'<div style="background:rgba(255,255,255,0.85);border:1px solid rgba(124,58,237,0.2);'
+            f'border-radius:16px;padding:1.5rem 2rem;backdrop-filter:blur(8px);'
+            f'box-shadow:0 4px 20px rgba(124,58,237,0.08);margin-top:1rem;">'
+            f'{notes_content}</div>',
+            unsafe_allow_html=True,
         )
-    st.markdown('</div>', unsafe_allow_html=True)
-    with st.expander("📄 Leggi lo script"):
-        st.markdown(st.session_state.get("last_podcast_script", ""))
+        st.download_button(
+            "⬇️ Scarica note",
+            data=notes_content,
+            file_name=f"{active_nb['name']}_{note_type.replace(' ', '_')}.md",
+            mime="text/markdown",
+        )
+
+# ── TAB: Podcast ───────────────────────────────────────────────────────────────
+with tab_podcast:
+    if not has_docs:
+        st.warning("Carica prima dei documenti nel notebook.")
+    else:
+        col_lang, col_detail = st.columns([1, 2])
+        lang = col_lang.selectbox(
+            "Lingua",
+            ["Auto-detect", "Italiano", "English"],
+            key="podcast_lang",
+        )
+        detail_options = list(DETAIL_LEVELS_EN.keys()) if lang == "English" else list(DETAIL_LEVELS_IT.keys())
+        detail_level = col_detail.selectbox(
+            "Livello di dettaglio",
+            detail_options,
+            index=1,
+            key="podcast_detail",
+        )
+
+        source_options = ["📚 Tutte le sbobine"] + indexed_docs
+        source_doc = st.selectbox(
+            "Sorgente",
+            source_options,
+            key="podcast_source",
+            help="Seleziona una sbobina specifica o usa tutto il materiale del notebook",
+        )
+
+        topic = st.text_input(
+            "Argomento (opzionale)",
+            placeholder="Es: Stenosi aortica, Shock cardiogeno, Patologie dell'aorta...",
+            key="podcast_topic",
+            help="Lascia vuoto per coprire tutto il materiale. Specifica un argomento per focalizzare il podcast.",
+        )
+
+        _TIME_HINTS = {
+            "Panoramica": "~3-5 min",
+            "Approfondito": "~12-18 min",
+            "Completo": "~30-40 min",
+            "Dettagliato (esame)": "~20-28 min per sezione",
+            "Overview": "~3-5 min",
+            "In-depth": "~12-18 min",
+            "Complete": "~30-40 min",
+            "Detailed (exam)": "~20-28 min per section",
+        }
+        st.markdown(
+            f'<div class="time-pill">⏱ Durata stimata: {_TIME_HINTS.get(detail_level, "—")}</div>',
+            unsafe_allow_html=True,
+        )
+
+        if st.button("🎙️ Genera Podcast", type="primary", use_container_width=True):
+            lang_map = {"Auto-detect": "auto", "Italiano": "it", "English": "en"}
+            lang_code = lang_map[lang]
+
+            if source_doc == "📚 Tutte le sbobine":
+                full_text = get_full_text(active_nb["id"])
+            else:
+                full_text = get_doc_text(active_nb["id"], source_doc)
+
+            if not full_text.strip():
+                st.error("Nessun testo disponibile per la sorgente selezionata.")
+            else:
+                progress_bar = st.progress(0, text="Avvio generazione...")
+                status_placeholder = st.empty()
+
+                def audio_progress(done, total):
+                    pct = 0.45 + (done / total) * 0.50
+                    progress_bar.progress(pct, text=f"Sintesi audio: battuta {done}/{total}...")
+
+                def on_status(msg: str):
+                    is_script = "script" in msg.lower() or "segmento" in msg.lower() or "generazione" in msg.lower()
+                    if is_script:
+                        progress_bar.progress(0.10, text=msg)
+                    status_placeholder.info(f"⏳ {msg}")
+
+                try:
+                    script, audio_path = generate_podcast(
+                        full_text=full_text,
+                        notebook_id=active_nb["id"],
+                        language=lang_code,
+                        topic=topic,
+                        detail_level=detail_level,
+                        progress_cb=audio_progress,
+                        status_cb=on_status,
+                    )
+                    progress_bar.progress(1.0, text="Podcast pronto!")
+                    status_placeholder.success("✅ Podcast generato!")
+                    st.session_state["last_podcast_script"] = script
+                    st.session_state["last_podcast_path"] = audio_path
+                except Exception as e:
+                    progress_bar.empty()
+                    status_placeholder.error(f"Errore: {e}")
+
+    if "last_podcast_path" in st.session_state and os.path.exists(
+        st.session_state["last_podcast_path"]
+    ):
+        st.markdown('<div class="podcast-card">', unsafe_allow_html=True)
+        st.audio(st.session_state["last_podcast_path"])
+        with open(st.session_state["last_podcast_path"], "rb") as f:
+            st.download_button(
+                "⬇️ Scarica MP3",
+                data=f,
+                file_name=Path(st.session_state["last_podcast_path"]).name,
+                mime="audio/mpeg",
+            )
+        st.markdown('</div>', unsafe_allow_html=True)
+        with st.expander("📄 Leggi lo script"):
+            st.markdown(st.session_state.get("last_podcast_script", ""))
