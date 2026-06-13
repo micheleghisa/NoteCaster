@@ -19,6 +19,11 @@ except ImportError:
     OCR_AVAILABLE = False
 
 
+def _sanitize(text: str) -> str:
+    """Remove characters PostgreSQL text columns cannot store (null bytes etc.)."""
+    return text.replace('\x00', '')
+
+
 def extract_text(file_path: str) -> str:
     ext = Path(file_path).suffix.lower()
 
@@ -47,7 +52,7 @@ def extract_text(file_path: str) -> str:
                     "Installa tesseract per OCR: brew install tesseract tesseract-lang"
                 )
 
-        return text.strip()
+        return _sanitize(text.strip())
 
     elif ext in (".docx", ".doc"):
         if not DOCX_AVAILABLE:
@@ -57,11 +62,11 @@ def extract_text(file_path: str) -> str:
             )
         document = docx.Document(file_path)
         text = "\n".join(p.text for p in document.paragraphs if p.text.strip())
-        return text.strip()
+        return _sanitize(text.strip())
 
     elif ext in (".txt", ".md"):
         with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-            return f.read().strip()
+            return _sanitize(f.read().strip())
 
     else:
         raise ValueError(f"Formato non supportato: {ext}")
