@@ -24,14 +24,19 @@ def index_document(notebook_id: str, doc_name: str, chunks: list) -> int:
 
     client = _get_client()
 
-    # Keep the full-text blob for podcast/notes generation (unchanged)
+    # Keep the full-text blob for podcast/notes generation.
+    # Delete-then-insert avoids needing a DB-level unique constraint.
     content = '\n\n'.join(chunks)
-    client.table("documents").upsert({
+    client.table("documents").delete() \
+        .eq("notebook_id", notebook_id) \
+        .eq("doc_name", doc_name) \
+        .execute()
+    client.table("documents").insert({
         "notebook_id": notebook_id,
         "doc_name": doc_name,
         "content": content,
         "created_at": datetime.datetime.now().isoformat(),
-    }, on_conflict="notebook_id,doc_name").execute()
+    }).execute()
 
     # Store each chunk individually for retrieval
     try:

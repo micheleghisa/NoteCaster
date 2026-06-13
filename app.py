@@ -3,6 +3,7 @@ import tempfile
 from pathlib import Path
 
 import streamlit as st
+import streamlit.components.v1 as components
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -207,6 +208,30 @@ details[data-testid="stExpander"] {
     .hint-mobile  { display: inline !important; }
 }
 
+/* Mobile FAB (Floating Action Button) per aprire il notebook manager.
+   Iniettato nel DOM parent via components.html — visibile solo su <1024px. */
+#nc-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    z-index: 999999;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.55);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+#nc-fab:active { transform: scale(.91); }
+@media (max-width: 1023px) { #nc-fab { display: flex !important; } }
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 999px; }
@@ -251,6 +276,15 @@ details[data-testid="stExpander"] {
 
 # ── Auth ───────────────────────────────────────────────────────────────────────
 _cookies = CookieController()
+
+# CookieController needs one render cycle before .set() is safe.
+# Handle any token that was deferred from the previous render.
+if "_pending_cookie" in st.session_state:
+    try:
+        _cookies.set("nc_refresh", st.session_state.pop("_pending_cookie"),
+                     max_age=30 * 24 * 60 * 60)
+    except Exception:
+        pass
 
 if "user" not in st.session_state:
     # CookieController needs one render cycle to read browser cookies via JS.
@@ -299,6 +333,7 @@ if "user" not in st.session_state:
             if not _email or not _pwd:
                 st.error("Inserisci email e password.")
             else:
+                _login_ok = False
                 try:
                     if _mode == "Accedi":
                         res = sign_in(_email, _pwd)
@@ -312,14 +347,125 @@ if "user" not in st.session_state:
                             "id": str(res.user.id),
                             "email": res.user.email,
                         }
-                        _cookies.set("nc_refresh", res.session.refresh_token,
-                                     max_age=30 * 24 * 60 * 60)
-                        st.rerun()
+                        if res.session:
+                            st.session_state["_pending_cookie"] = res.session.refresh_token
+                        _login_ok = True
                 except Exception as e:
                     st.error(f"Errore: {e}")
+                # st.rerun() must be outside try/except: in Streamlit ≥1.27
+                # RerunException subclasses Exception and would be swallowed,
+                # silently preventing the rerun from firing.
+                if _login_ok:
+                    st.rerun()
     st.stop()
 
 user = st.session_state["user"]
+
+# ── Mobile notebook manager dialog ────────────────────────────────────────────
+@st.dialog("📚 Notebook", width="large")
+def _notebook_manager_dialog():
+    _u = st.session_state["user"]
+
+    st.markdown(
+        '<p style="font-size:.75rem;font-weight:700;text-transform:uppercase;'
+        'letter-spacing:1px;color:#7c3aed;margin-bottom:6px;">Nuovo Notebook</p>',
+        unsafe_allow_html=True,
+    )
+    _c1, _c2 = st.columns([3, 1])
+    _dlg_name = _c1.text_input(
+        "Nome", placeholder="Es: Cardiologia",
+        key="dlg_nb_name", label_visibility="collapsed",
+    )
+    if _c2.button("＋", key="dlg_add_nb", use_container_width=True, type="primary"):
+        if _dlg_name.strip():
+            _nb = create_notebook(_dlg_name.strip(), user_id=_u["id"])
+            st.session_state.active_notebook = _nb
+            st.rerun()
+
+    st.divider()
+
+    st.markdown(
+        '<p style="font-size:.75rem;font-weight:700;text-transform:uppercase;'
+        'letter-spacing:1px;color:#7c3aed;margin-bottom:6px;">I tuoi Notebook</p>',
+        unsafe_allow_html=True,
+    )
+    _nbs = get_notebooks(user_id=_u["id"])
+    if not _nbs:
+        st.info("Nessun notebook. Creane uno sopra.")
+    else:
+        for _nb in _nbs:
+            _dcnt = len(get_indexed_docs(_nb["id"]))
+            _active = (st.session_state.active_notebook or {}).get("id") == _nb["id"]
+            _cn, _cd = st.columns([5, 1])
+            if _cn.button(
+                f"{'▶ ' if _active else ''}{_nb['name']} ({_dcnt} doc)",
+                key=f"dlg_nb_{_nb['id']}",
+                type="primary" if _active else "secondary",
+                use_container_width=True,
+            ):
+                if not _active:
+                    st.session_state.active_notebook = _nb
+                    st.rerun()
+            if _cd.button("🗑", key=f"dlg_del_{_nb['id']}"):
+                st.session_state[f"dlg_cdel_{_nb['id']}"] = True
+                st.rerun()
+            if st.session_state.get(f"dlg_cdel_{_nb['id']}"):
+                st.warning(f"Eliminare '{_nb['name']}'?")
+                _cy, _cn2 = st.columns(2)
+                if _cy.button("Sì, elimina", key=f"dlg_y_{_nb['id']}", type="primary"):
+                    delete_notebook(_nb["id"], user_id=_u["id"])
+                    delete_notebook_index(_nb["id"])
+                    if (st.session_state.active_notebook or {}).get("id") == _nb["id"]:
+                        st.session_state.active_notebook = None
+                    del st.session_state[f"dlg_cdel_{_nb['id']}"]
+                    st.rerun()
+                if _cn2.button("Annulla", key=f"dlg_n_{_nb['id']}"):
+                    del st.session_state[f"dlg_cdel_{_nb['id']}"]
+                    st.rerun()
+
+    _anb = st.session_state.active_notebook
+    if _anb:
+        st.divider()
+        st.markdown(f"**📁 {_anb['name']}**")
+        _indexed = get_indexed_docs(_anb["id"])
+        for _d in _indexed:
+            st.caption(f"• {_d}")
+        if not _indexed:
+            st.caption("Nessuna sbobina ancora.")
+        _up = st.file_uploader(
+            "Carica sbobine", type=["pdf", "docx", "txt", "md"],
+            accept_multiple_files=True, key=f"dlg_up_{_anb['id']}",
+        )
+        if st.button("📥 Indicizza", key="dlg_idx", disabled=not _up, use_container_width=True):
+            _prog = st.progress(0)
+            _results = []
+            for _i, _f in enumerate(_up):
+                _prog.progress((_i + 1) / len(_up))
+                _sfx = Path(_f.name).suffix
+                with tempfile.NamedTemporaryFile(suffix=_sfx, delete=False) as _tmp:
+                    _tmp.write(_f.read())
+                    _tp = _tmp.name
+                try:
+                    _txt = extract_text(_tp)
+                    if not _txt.strip():
+                        _results.append(f"⚠️ {_f.name}: nessun testo")
+                        continue
+                    _cks = chunk_text(_txt)
+                    _added = index_document(_anb["id"], _f.name, _cks)
+                    _results.append(f"✓ {_f.name} ({_added} chunk)")
+                except ValueError as _e:
+                    _results.append(f"✗ {_f.name}: {_e}")
+                finally:
+                    os.unlink(_tp)
+            _prog.empty()
+            for _r in _results:
+                if _r.startswith("✓"):
+                    st.success(_r)
+                elif _r.startswith("⚠"):
+                    st.warning(_r)
+                else:
+                    st.error(_r)
+            st.rerun()
 
 # ── Session state ──────────────────────────────────────────────────────────────
 st.session_state.setdefault("active_notebook", None)
@@ -465,7 +611,59 @@ with st.sidebar:
                     st.error(r)
             st.rerun()
 
+# ── MOBILE FAB ────────────────────────────────────────────────────────────────
+# Inject a floating action button into the parent document via JS.
+# The FAB is only visible on screens < 1024px (CSS above) and opens the
+# notebook manager dialog by clicking Streamlit's sidebar toggle (with
+# fallback to the #nc-nb-btn trigger button below).
+components.html("""
+<script>
+(function () {
+    function setup() {
+        var pd = window.parent.document;
+        if (!pd || pd.getElementById('nc-fab')) return;
+
+        var fab = pd.createElement('button');
+        fab.id = 'nc-fab';
+        fab.title = 'Gestisci Notebook';
+        fab.textContent = '☰';   /* ☰ */
+
+        fab.addEventListener('click', function () {
+            /* Try Streamlit's own sidebar toggles first */
+            var sels = [
+                '[data-testid="stSidebarCollapsed"] button',
+                '[data-testid="collapsedControl"] button',
+                '[data-testid="stSidebarCollapseButton"] button',
+            ];
+            for (var i = 0; i < sels.length; i++) {
+                var el = pd.querySelector(sels[i]);
+                if (el) { el.click(); return; }
+            }
+            /* Fallback: click the "☰ Notebook" button by text content */
+            var buttons = pd.querySelectorAll('[data-testid="stButton"] button');
+            for (var j = 0; j < buttons.length; j++) {
+                if (buttons[j].textContent.indexOf('Notebook') >= 0) {
+                    buttons[j].click();
+                    return;
+                }
+            }
+        });
+        pd.body.appendChild(fab);
+    }
+    setup();
+    setTimeout(setup, 600);
+    setTimeout(setup, 2000);
+})();
+</script>
+""", height=0, scrolling=False)
+
 # ── MAIN AREA ──────────────────────────────────────────────────────────────────
+# "☰ Notebook" button — always visible, primary mobile navigation.
+# The JS FAB above clicks this button by text when the sidebar toggle is absent.
+_nb_btn_col = st.columns([1, 6])[0]
+if _nb_btn_col.button("☰ Notebook", key="_nb_panel_btn", use_container_width=True):
+    _notebook_manager_dialog()
+
 if not st.session_state.active_notebook:
     st.markdown("""
     <div style="text-align:center; padding: 3rem 1rem 2rem;">
@@ -529,7 +727,7 @@ if not st.session_state.active_notebook:
         <span class="hint-mobile">
             <span style="font-size: 1.1rem;">☰</span>
             <span style="font-weight: 700; color: #4c1d95; font-size: 0.9rem; margin-left: 0.4rem;">
-                Tocca ☰ in alto a sinistra
+                Tocca <strong>☰ Notebook</strong> in alto
             </span>
         </span>
     </div>
