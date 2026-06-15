@@ -39,8 +39,10 @@ st.set_page_config(
 # ── CSS ────────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+*, *::before, *::after { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important; }
 .stApp {
-    background: linear-gradient(135deg, #fdf4ff 0%, #f0e7ff 20%, #e8f0fe 50%, #e0f7fa 80%, #f0fdf4 100%) !important;
+    background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 50%, #e8f4fd 100%) !important;
     background-attachment: fixed !important;
 }
 
@@ -48,88 +50,88 @@ st.markdown("""
 [data-testid="stHeader"] { background: transparent !important; }
 
 [data-testid="stSidebar"] {
-    background: linear-gradient(160deg, #1a0533 0%, #1e1b4b 40%, #0f2744 100%) !important;
-    border-right: 1px solid rgba(124, 58, 237, 0.3) !important;
+    background: linear-gradient(160deg, #0f172a 0%, #1e293b 40%, #0d1e35 100%) !important;
+    border-right: 1px solid rgba(30,58,95,0.4) !important;
 }
-[data-testid="stSidebar"] * { color: #e2d9f3 !important; }
-[data-testid="stSidebar"] .stCaption, [data-testid="stSidebar"] caption { color: #a78bca !important; }
+[data-testid="stSidebar"] * { color: #e2e8f0 !important; }
+[data-testid="stSidebar"] .stCaption, [data-testid="stSidebar"] caption { color: #7aa3c4 !important; }
 [data-testid="stSidebar"] input[type="text"] {
     background: rgba(255,255,255,0.08) !important;
-    border: 1px solid rgba(124,58,237,0.4) !important;
+    border: 1px solid rgba(30,58,95,0.4) !important;
     border-radius: 10px !important;
-    color: #f1ebff !important;
+    color: #f0f9ff !important;
 }
-[data-testid="stSidebar"] input[type="text"]::placeholder { color: #8b7aa8 !important; }
+[data-testid="stSidebar"] input[type="text"]::placeholder { color: #64748b !important; }
 [data-testid="stSidebar"] .stButton button {
     background: rgba(255,255,255,0.07) !important;
     border: 1px solid rgba(255,255,255,0.15) !important;
-    color: #e2d9f3 !important;
+    color: #e2e8f0 !important;
     border-radius: 10px !important;
     transition: all 0.2s ease !important;
 }
 [data-testid="stSidebar"] .stButton button:hover {
-    background: rgba(124,58,237,0.25) !important;
-    border-color: rgba(124,58,237,0.6) !important;
+    background: rgba(30,58,95,0.25) !important;
+    border-color: rgba(30,58,95,0.6) !important;
 }
 [data-testid="stSidebar"] .stButton button[kind="primary"] {
-    background: linear-gradient(135deg, #7c3aed, #6366f1) !important;
+    background: linear-gradient(135deg, #1e3a5f, #2563eb) !important;
     border: none !important;
     color: #ffffff !important;
-    box-shadow: 0 2px 8px rgba(124,58,237,0.4) !important;
+    box-shadow: 0 2px 8px rgba(30,58,95,0.4) !important;
 }
 [data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
-    background: rgba(124,58,237,0.12) !important;
-    border: 2px dashed rgba(124,58,237,0.5) !important;
+    background: rgba(30,58,95,0.12) !important;
+    border: 2px dashed rgba(30,58,95,0.5) !important;
     border-radius: 12px !important;
 }
-[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] * { color: #c4b5fd !important; }
-[data-testid="stSidebar"] hr { border-color: rgba(124,58,237,0.25) !important; }
+[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] * { color: #93c5fd !important; }
+[data-testid="stSidebar"] hr { border-color: rgba(30,58,95,0.25) !important; }
 [data-testid="stSidebar"] .stAlert {
-    background: rgba(124,58,237,0.15) !important;
-    border: 1px solid rgba(124,58,237,0.3) !important;
+    background: rgba(30,58,95,0.15) !important;
+    border: 1px solid rgba(30,58,95,0.3) !important;
     border-radius: 10px !important;
-    color: #e2d9f3 !important;
+    color: #e2e8f0 !important;
 }
 
 .main .stButton button[kind="primary"] {
-    background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%) !important;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%) !important;
     border: none !important;
     color: #ffffff !important;
     border-radius: 12px !important;
     font-weight: 600 !important;
-    box-shadow: 0 4px 15px rgba(124,58,237,0.35) !important;
+    box-shadow: 0 4px 15px rgba(30,58,95,0.35) !important;
     transition: all 0.2s ease !important;
     padding: 0.5rem 1.5rem !important;
 }
 .main .stButton button[kind="primary"]:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(124,58,237,0.5) !important;
+    box-shadow: 0 6px 20px rgba(30,58,95,0.5) !important;
 }
 .main .stButton button[kind="secondary"] {
     background: rgba(255,255,255,0.8) !important;
-    border: 1.5px solid #7c3aed !important;
-    color: #7c3aed !important;
+    border: 1.5px solid #1e3a5f !important;
+    color: #1e3a5f !important;
     border-radius: 12px !important;
     font-weight: 500 !important;
     transition: all 0.2s ease !important;
 }
 
 .stDownloadButton button {
-    background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%) !important;
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
     border: none !important;
     color: #ffffff !important;
     border-radius: 12px !important;
     font-weight: 600 !important;
-    box-shadow: 0 4px 12px rgba(13,148,136,0.35) !important;
+    box-shadow: 0 4px 12px rgba(14,165,233,0.35) !important;
     transition: all 0.2s ease !important;
 }
 .stDownloadButton button:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 6px 18px rgba(13,148,136,0.5) !important;
+    box-shadow: 0 6px 18px rgba(14,165,233,0.5) !important;
 }
 
 [data-testid="stProgressBar"] > div > div > div > div {
-    background: linear-gradient(90deg, #7c3aed, #6366f1, #0d9488, #0891b2, #7c3aed) !important;
+    background: linear-gradient(90deg, #1e3a5f, #2563eb, #0ea5e9, #0284c7, #1e3a5f) !important;
     background-size: 200% 100% !important;
     animation: shimmer 2s linear infinite !important;
     border-radius: 999px !important;
@@ -141,16 +143,16 @@ st.markdown("""
 
 details[data-testid="stExpander"] {
     background: rgba(255,255,255,0.75) !important;
-    border: 1px solid rgba(124,58,237,0.2) !important;
+    border: 1px solid rgba(30,58,95,0.2) !important;
     border-radius: 14px !important;
     backdrop-filter: blur(8px) !important;
-    box-shadow: 0 2px 10px rgba(124,58,237,0.08) !important;
+    box-shadow: 0 2px 10px rgba(30,58,95,0.08) !important;
 }
 
 [data-testid="stFileUploaderDropzone"] {
-    border: 2px dashed #7c3aed !important;
+    border: 2px dashed #1e3a5f !important;
     border-radius: 14px !important;
-    background: rgba(124,58,237,0.04) !important;
+    background: rgba(30,58,95,0.04) !important;
 }
 
 /* ── Responsive sidebar ───────────────────────────────────────── */
@@ -170,9 +172,9 @@ details[data-testid="stExpander"] {
 @media (min-width: 768px) and (max-width: 1023px) {
     [data-testid="stSidebarCollapseButton"] {
         display: flex !important;
-        color: #c4b5fd !important;
+        color: #93c5fd !important;
     }
-    [data-testid="stSidebarCollapseButton"] svg { fill: #c4b5fd !important; }
+    [data-testid="stSidebarCollapseButton"] svg { fill: #93c5fd !important; }
 }
 
 /* Mobile < 768 px: sidebar nascosta di default, hamburger stilizzato */
@@ -181,9 +183,9 @@ details[data-testid="stExpander"] {
 
     /* Bottone hamburger (appare quando la sidebar è chiusa) */
     [data-testid="collapsedControl"] {
-        background: linear-gradient(135deg, #7c3aed, #6366f1) !important;
+        background: linear-gradient(135deg, #1e3a5f, #2563eb) !important;
         border-radius: 10px !important;
-        box-shadow: 0 4px 12px rgba(124,58,237,0.4) !important;
+        box-shadow: 0 4px 12px rgba(30,58,95,0.4) !important;
         padding: 4px !important;
     }
     [data-testid="collapsedControl"] svg { fill: #ffffff !important; }
@@ -219,14 +221,14 @@ details[data-testid="stExpander"] {
     height: 58px;
     border-radius: 50%;
     border: none;
-    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    background: linear-gradient(135deg, #1e3a5f, #2563eb);
     color: #fff;
     font-size: 24px;
     cursor: pointer;
     display: none;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.55);
+    box-shadow: 0 4px 20px rgba(30,58,95,0.5);
     transition: transform .15s ease, box-shadow .15s ease;
 }
 #nc-fab:active { transform: scale(.91); }
@@ -234,27 +236,27 @@ details[data-testid="stExpander"] {
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 999px; }
+::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 999px; }
 
 [data-baseweb="select"] > div:first-child {
     border-radius: 12px !important;
-    border: 1.5px solid rgba(124,58,237,0.35) !important;
+    border: 1.5px solid rgba(30,58,95,0.35) !important;
     background: rgba(255,255,255,0.8) !important;
 }
 
 .main input[type="text"], .main textarea {
     border-radius: 12px !important;
-    border: 1.5px solid rgba(124,58,237,0.3) !important;
+    border: 1.5px solid rgba(30,58,95,0.3) !important;
     background: rgba(255,255,255,0.9) !important;
 }
 .main input[type="text"]:focus, .main textarea:focus {
-    border-color: #7c3aed !important;
-    box-shadow: 0 0 0 3px rgba(124,58,237,0.12) !important;
+    border-color: #1e3a5f !important;
+    box-shadow: 0 0 0 3px rgba(30,58,95,0.12) !important;
 }
 
 .podcast-card {
-    background: linear-gradient(135deg, rgba(13,148,136,0.08), rgba(8,145,178,0.08));
-    border: 1px solid rgba(13,148,136,0.25);
+    background: linear-gradient(135deg, rgba(14,165,233,0.08), rgba(2,132,199,0.08));
+    border: 1px solid rgba(14,165,233,0.25);
     border-radius: 16px;
     padding: 1.25rem 1.5rem;
     margin-top: 0.75rem;
@@ -262,12 +264,12 @@ details[data-testid="stExpander"] {
 
 .time-pill {
     display: inline-block;
-    background: linear-gradient(135deg, rgba(13,148,136,0.15), rgba(8,145,178,0.15));
-    border: 1px solid rgba(13,148,136,0.3);
+    background: linear-gradient(135deg, rgba(14,165,233,0.15), rgba(2,132,199,0.15));
+    border: 1px solid rgba(14,165,233,0.3);
     border-radius: 999px;
     padding: 4px 14px;
     font-size: 0.82rem;
-    color: #0d7377;
+    color: #0369a1;
     font-weight: 600;
     margin-bottom: 0.75rem;
 }
@@ -314,10 +316,10 @@ if "user" not in st.session_state:
         <div style="font-size:2.8rem; margin-bottom:0.4rem;">🎙️</div>
         <h1 style="
             font-size:2rem; font-weight:900; margin:0 0 0.3rem;
-            background: linear-gradient(135deg, #7c3aed, #6366f1, #0d9488);
+            background: linear-gradient(135deg, #1e3a5f, #2563eb, #0ea5e9);
             -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
         ">NoteCaster</h1>
-        <p style="color:#6b7280; font-size:0.9rem; margin-bottom:2rem;">
+        <p style="color:#64748b; font-size:0.9rem; margin-bottom:2rem;">
             Accedi o crea un account per iniziare
         </p>
     </div>
@@ -368,7 +370,7 @@ def _notebook_manager_dialog():
 
     st.markdown(
         '<p style="font-size:.75rem;font-weight:700;text-transform:uppercase;'
-        'letter-spacing:1px;color:#7c3aed;margin-bottom:6px;">Nuovo Notebook</p>',
+        'letter-spacing:1px;color:#1e3a5f;margin-bottom:6px;">Nuovo Notebook</p>',
         unsafe_allow_html=True,
     )
     _c1, _c2 = st.columns([3, 1])
@@ -386,7 +388,7 @@ def _notebook_manager_dialog():
 
     st.markdown(
         '<p style="font-size:.75rem;font-weight:700;text-transform:uppercase;'
-        'letter-spacing:1px;color:#7c3aed;margin-bottom:6px;">I tuoi Notebook</p>',
+        'letter-spacing:1px;color:#1e3a5f;margin-bottom:6px;">I tuoi Notebook</p>',
         unsafe_allow_html=True,
     )
     _nbs = get_notebooks(user_id=_u["id"])
@@ -472,7 +474,7 @@ st.session_state.setdefault("active_notebook", None)
 st.session_state.setdefault("chat_history", [])
 st.session_state.setdefault("last_notebook_id", None)
 
-NB_COLORS = ["#7c3aed", "#2563eb", "#0d9488", "#ea580c", "#db2777", "#d97706"]
+NB_COLORS = ["#1e3a5f", "#2563eb", "#0ea5e9", "#ea580c", "#db2777", "#d97706"]
 
 # ── SIDEBAR ────────────────────────────────────────────────────────────────────
 with st.sidebar:
@@ -480,11 +482,11 @@ with st.sidebar:
     <div style="text-align:center; padding: 1.2rem 0.5rem 0.8rem;">
         <div style="font-size: 2.4rem; margin-bottom:4px;">🎙️</div>
         <div style="font-size: 1.4rem; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">NoteCaster</div>
-        <div style="font-size: 0.72rem; color: #8b7aa8; margin-top: 2px;">Podcast dalle sbobbine</div>
+        <div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">Podcast dalle sbobbine</div>
     </div>
     """, unsafe_allow_html=True)
     st.markdown(
-        f'<p style="font-size:0.7rem; color:#8b7aa8; text-align:center; margin:0 0 4px;">{user["email"]}</p>',
+        f'<p style="font-size:0.7rem; color:#64748b; text-align:center; margin:0 0 4px;">{user["email"]}</p>',
         unsafe_allow_html=True,
     )
     if st.button("Esci", use_container_width=True):
@@ -498,7 +500,7 @@ with st.sidebar:
 
     st.markdown(
         '<p style="font-size:0.68rem; font-weight:700; text-transform:uppercase; '
-        'letter-spacing:1.2px; color:#c4b5fd; margin-bottom:6px;">Nuovo Notebook</p>',
+        'letter-spacing:1.2px; color:#93c5fd; margin-bottom:6px;">Nuovo Notebook</p>',
         unsafe_allow_html=True,
     )
     col1, col2 = st.columns([3, 1])
@@ -518,7 +520,7 @@ with st.sidebar:
 
     st.markdown(
         '<p style="font-size:0.68rem; font-weight:700; text-transform:uppercase; '
-        'letter-spacing:1.2px; color:#c4b5fd; margin-bottom:6px;">I tuoi Notebook</p>',
+        'letter-spacing:1.2px; color:#93c5fd; margin-bottom:6px;">I tuoi Notebook</p>',
         unsafe_allow_html=True,
     )
     notebooks = get_notebooks(user_id=user["id"])
@@ -562,7 +564,7 @@ with st.sidebar:
         st.divider()
         st.markdown(
             f'<p style="font-size:0.68rem; font-weight:700; text-transform:uppercase; '
-            f'letter-spacing:1.2px; color:#c4b5fd; margin-bottom:6px;">📁 {active_nb_sidebar["name"]}</p>',
+            f'letter-spacing:1.2px; color:#93c5fd; margin-bottom:6px;">📁 {active_nb_sidebar["name"]}</p>',
             unsafe_allow_html=True,
         )
         indexed = get_indexed_docs(active_nb_sidebar["id"])
@@ -670,11 +672,11 @@ if not st.session_state.active_notebook:
         <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🎙️</div>
         <h1 style="
             font-size: 3rem; font-weight: 900;
-            background: linear-gradient(135deg, #7c3aed 0%, #6366f1 40%, #0d9488 100%);
+            background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 40%, #0ea5e9 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text; margin: 0 0 0.6rem; letter-spacing: -1.5px;
         ">NoteCaster</h1>
-        <p style="font-size: 1.1rem; color: #6b7280; max-width: 480px; margin: 0 auto 2.5rem;">
+        <p style="font-size: 1.1rem; color: #64748b; max-width: 480px; margin: 0 auto 2.5rem;">
             Trasforma le tue sbobbine in un podcast con due host AI — come NotebookLM, ma gratis e in italiano.
         </p>
     </div>
@@ -683,50 +685,50 @@ if not st.session_state.active_notebook:
     col1, col2, col3 = st.columns(3, gap="medium")
     with col1:
         st.markdown("""
-        <div style="background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(99,102,241,0.15));
-                    border: 1px solid rgba(124,58,237,0.25); border-radius: 18px; padding: 1.5rem 1.2rem;
+        <div style="background: linear-gradient(135deg, rgba(30,58,95,0.1), rgba(37,99,235,0.15));
+                    border: 1px solid rgba(30,58,95,0.25); border-radius: 18px; padding: 1.5rem 1.2rem;
                     text-align: center;">
             <div style="font-size: 2rem; margin-bottom: 0.5rem;">1️⃣</div>
-            <div style="font-weight: 700; color: #4c1d95; font-size: 0.95rem; margin-bottom: 0.4rem;">Crea un notebook</div>
-            <div style="font-size: 0.82rem; color: #6d28d9;">Uno per materia o per esame</div>
+            <div style="font-weight: 700; color: #1e293b; font-size: 0.95rem; margin-bottom: 0.4rem;">Crea un notebook</div>
+            <div style="font-size: 0.82rem; color: #1d4ed8;">Uno per materia o per esame</div>
         </div>
         """, unsafe_allow_html=True)
     with col2:
         st.markdown("""
-        <div style="background: linear-gradient(135deg, rgba(37,99,235,0.1), rgba(99,102,241,0.15));
+        <div style="background: linear-gradient(135deg, rgba(37,99,235,0.1), rgba(37,99,235,0.15));
                     border: 1px solid rgba(37,99,235,0.25); border-radius: 18px; padding: 1.5rem 1.2rem;
                     text-align: center;">
             <div style="font-size: 2rem; margin-bottom: 0.5rem;">2️⃣</div>
-            <div style="font-weight: 700; color: #1e3a8a; font-size: 0.95rem; margin-bottom: 0.4rem;">Carica le sbobine</div>
+            <div style="font-weight: 700; color: #1e293b; font-size: 0.95rem; margin-bottom: 0.4rem;">Carica le sbobine</div>
             <div style="font-size: 0.82rem; color: #1d4ed8;">PDF, DOCX o TXT — anche più file</div>
         </div>
         """, unsafe_allow_html=True)
     with col3:
         st.markdown("""
-        <div style="background: linear-gradient(135deg, rgba(13,148,136,0.1), rgba(8,145,178,0.15));
-                    border: 1px solid rgba(13,148,136,0.25); border-radius: 18px; padding: 1.5rem 1.2rem;
+        <div style="background: linear-gradient(135deg, rgba(14,165,233,0.1), rgba(2,132,199,0.15));
+                    border: 1px solid rgba(14,165,233,0.25); border-radius: 18px; padding: 1.5rem 1.2rem;
                     text-align: center;">
             <div style="font-size: 2rem; margin-bottom: 0.5rem;">3️⃣</div>
-            <div style="font-weight: 700; color: #134e4a; font-size: 0.95rem; margin-bottom: 0.4rem;">Genera il podcast</div>
-            <div style="font-size: 0.82rem; color: #0f766e;">Scegli argomento, livello e scarica l'MP3</div>
+            <div style="font-weight: 700; color: #0f172a; font-size: 0.95rem; margin-bottom: 0.4rem;">Genera il podcast</div>
+            <div style="font-size: 0.82rem; color: #0369a1;">Scegli argomento, livello e scarica l'MP3</div>
         </div>
         """, unsafe_allow_html=True)
 
     st.markdown("""
     <div style="
-        background: linear-gradient(135deg, rgba(124,58,237,0.07), rgba(99,102,241,0.1));
-        border: 1.5px solid rgba(124,58,237,0.2); border-radius: 14px;
+        background: linear-gradient(135deg, rgba(30,58,95,0.07), rgba(37,99,235,0.1));
+        border: 1.5px solid rgba(30,58,95,0.2); border-radius: 14px;
         padding: 1rem 1.5rem; text-align: center; max-width: 400px; margin: 2rem auto 0;
     ">
         <span class="hint-desktop">
             <span style="font-size: 1.1rem;">👈</span>
-            <span style="font-weight: 700; color: #4c1d95; font-size: 0.9rem; margin-left: 0.4rem;">
+            <span style="font-weight: 700; color: #1e293b; font-size: 0.9rem; margin-left: 0.4rem;">
                 Inizia dalla sidebar
             </span>
         </span>
         <span class="hint-mobile">
             <span style="font-size: 1.1rem;">☰</span>
-            <span style="font-weight: 700; color: #4c1d95; font-size: 0.9rem; margin-left: 0.4rem;">
+            <span style="font-weight: 700; color: #1e293b; font-size: 0.9rem; margin-left: 0.4rem;">
                 Tocca <strong>☰ Notebook</strong> in alto
             </span>
         </span>
@@ -745,26 +747,26 @@ if st.session_state.last_notebook_id != active_nb["id"]:
 nb_doc_count = len(get_indexed_docs(active_nb["id"]))
 st.markdown(f"""
 <div style="
-    background: rgba(255,255,255,0.75); border: 1px solid rgba(124,58,237,0.2);
+    background: rgba(255,255,255,0.75); border: 1px solid rgba(30,58,95,0.2);
     border-radius: 18px; padding: 1.25rem 1.75rem; margin-bottom: 1.5rem;
-    backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(124,58,237,0.08);
+    backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(30,58,95,0.08);
     display: flex; align-items: center; gap: 1rem;
 ">
     <div style="font-size: 2rem;">🎙️</div>
     <div style="flex: 1;">
         <h2 style="
             margin: 0; font-size: 1.6rem; font-weight: 800;
-            background: linear-gradient(135deg, #7c3aed, #6366f1);
+            background: linear-gradient(135deg, #1e3a5f, #2563eb);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text; letter-spacing: -0.5px;
         ">{active_nb['name']}</h2>
-        <div style="font-size: 0.8rem; color: #6b7280; margin-top: 2px;">
+        <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">
             {nb_doc_count} sbobina{'e' if nb_doc_count != 1 else ''} indicizzata{'e' if nb_doc_count != 1 else ''}
         </div>
     </div>
     <span style="
-        background: linear-gradient(135deg, rgba(13,148,136,0.15), rgba(8,145,178,0.15));
-        border: 1px solid rgba(13,148,136,0.35); color: #0f766e;
+        background: linear-gradient(135deg, rgba(14,165,233,0.15), rgba(2,132,199,0.15));
+        border: 1px solid rgba(14,165,233,0.35); color: #0369a1;
         font-size: 0.72rem; font-weight: 700; padding: 4px 12px;
         border-radius: 999px; letter-spacing: 0.5px;
     ">✦ PODCAST READY</span>

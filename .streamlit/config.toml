@@ -3,7 +3,7 @@ maxUploadSize = 100
 enableXsrfProtection = false
 
 [theme]
-primaryColor = "#7c3aed"
-backgroundColor = "#fdf4ff"
-secondaryBackgroundColor = "#f0e7ff"
-textColor = "#1f2937"
+primaryColor = "#1e3a5f"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f4f8"
+textColor = "#0f172a"
