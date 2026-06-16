@@ -208,18 +208,7 @@ def _build_system_prompt(
             "Tratta ESCLUSIVAMENTE questo argomento. Ignora le sezioni del materiale non pertinenti."
             if topic else ""
         )
-        complete_block = (
-            """
-
-MODALITÀ STUDIO COMPLETO:
-- Copri OGNI argomento presente nel materiale — nessuna omissione
-- Per ogni patologia/argomento: fisiopatologia, classificazione, quadro clinico, \
-principali esami diagnostici (cosa cercano e quando usarli), terapia (approccio generale \
-e farmaci principali con le loro indicazioni)
-- Usa analogie per i meccanismi fisiopatologici e mnemoniche per classificazioni e criteri
-- Fai sbagliare Marco su un dettaglio per segmento: Sofia lo corregge — crea un ancoraggio"""
-            if is_complete else ""
-        )
+        complete_block = ""
         exam_block = (
             """
 
@@ -294,18 +283,7 @@ SOFIA: [testo della battuta]"""
             "Cover ONLY this topic. Ignore unrelated sections in the source material."
             if topic else ""
         )
-        complete_block = (
-            """
-
-COMPLETE STUDY MODE:
-- Cover EVERY topic present in the material — no omissions
-- For each pathology/topic: pathophysiology, classification, clinical picture, \
-main diagnostic tests (what they look for and when to use them), treatment (general approach \
-and key drugs with their indications)
-- Use analogies for pathophysiological mechanisms and mnemonics for classifications and criteria
-- Have Alex get a detail wrong per segment: Emma corrects him — creates an anchor moment"""
-            if is_complete else ""
-        )
+        complete_block = ""
         exam_block = (
             """
 
