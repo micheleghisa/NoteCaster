@@ -45,22 +45,22 @@ _DETAIL_CONFIG: dict[str, dict] = {
     },
     # chunk_chars=13_000: ~2.000 parole di testo fonte per chunk.
     # Copre tutti gli argomenti del materiale con profondità di studio, non da esame.
+    # chunk_chars=22_000: ~3 chunk su 50k chars → ~20 min totali.
+    # Meno giunture = meno ripetizioni tra sezioni.
     "Completo": {
-        "chunk_chars": 13_000,
+        "chunk_chars": 22_000,
         "max_text_chars": None,
-        "words_range": "1800-2500",
-        "minutes_range": "15-20",
-        "max_tokens": 4_500,
+        "words_range": "1200-1600",
+        "minutes_range": "10-13",
+        "max_tokens": 3_200,
     },
-    # chunk_chars=7_000: ogni chunk è ~1.000-1.200 parole di testo fonte.
-    # Con max_tokens=6_000 il modello ha spazio per espandere in profondità ogni concetto
-    # senza dover riassumere. La durata totale scala linearmente con il materiale.
+    # chunk_chars=14_000: ~4 chunk su 50k chars → ~35-40 min totali.
     "Dettagliato (esame)": {
-        "chunk_chars": 7_000,
+        "chunk_chars": 14_000,
         "max_text_chars": None,
-        "words_range": "2500-3500",
-        "minutes_range": "20-28",
-        "max_tokens": 6_000,
+        "words_range": "1500-2000",
+        "minutes_range": "12-16",
+        "max_tokens": 4_000,
     },
     "Overview": {
         "chunk_chars": None,
@@ -77,18 +77,18 @@ _DETAIL_CONFIG: dict[str, dict] = {
         "max_tokens": 3_800,
     },
     "Complete": {
-        "chunk_chars": 13_000,
+        "chunk_chars": 22_000,
         "max_text_chars": None,
-        "words_range": "1800-2500",
-        "minutes_range": "15-20",
-        "max_tokens": 4_500,
+        "words_range": "1200-1600",
+        "minutes_range": "10-13",
+        "max_tokens": 3_200,
     },
     "Detailed (exam)": {
-        "chunk_chars": 7_000,
+        "chunk_chars": 14_000,
         "max_text_chars": None,
-        "words_range": "2500-3500",
-        "minutes_range": "20-28",
-        "max_tokens": 6_000,
+        "words_range": "1500-2000",
+        "minutes_range": "12-16",
+        "max_tokens": 4_000,
     },
 }
 
@@ -104,13 +104,13 @@ DETAIL_LEVELS_IT = {
     ),
     "Completo": (
         "Studio completo — tutti gli argomenti del materiale coperti con meccanismi, classificazioni, "
-        "clinica, diagnostica e terapia. Mnemoniche e analogie. (~30-40 min, scala con il materiale)"
+        "clinica, diagnostica e terapia. Mnemoniche e analogie. (~15-20 min, scala con il materiale)"
     ),
     "Dettagliato (esame)": (
         "Ripetizione da esame — ogni argomento trattato per intero: eziopatogenesi, classificazioni, "
         "clinica, diagnostica (lab/ECG/imaging), diagnosi differenziale, terapia. "
         "Nessuna omissione. Analogie, mnemoniche e battute per fissare ogni concetto. "
-        "(20-28 min per sezione, scala con il materiale)"
+        "(~35-40 min, scala con il materiale)"
     ),
 }
 DETAIL_LEVELS_EN = {
@@ -122,13 +122,13 @@ DETAIL_LEVELS_EN = {
     ),
     "Complete": (
         "Full study — every topic in the material covered with mechanisms, classifications, "
-        "clinical picture, diagnostics and treatment. Mnemonics and analogies. (~30-40 min, scales with material)"
+        "clinical picture, diagnostics and treatment. Mnemonics and analogies. (~15-20 min, scales with material)"
     ),
     "Detailed (exam)": (
         "Exam repetition — every topic covered in full: etiopathogenesis, classifications, "
         "clinical features, diagnostics (labs/ECG/imaging), differential diagnosis, treatment. "
         "No omissions. Analogies, mnemonics and humour to anchor every concept. "
-        "(20-28 min per section, scales with material)"
+        "(~35-40 min, scales with material)"
     ),
 }
 
@@ -190,6 +190,7 @@ def _build_system_prompt(
     minutes_range: str,
     topic: str,
     segment_role: str | None,
+    previous_context: str = "",
 ) -> str:
     is_exam = detail_level in ("Dettagliato (esame)", "Detailed (exam)")
     is_complete = detail_level in ("Completo", "Complete")
@@ -261,12 +262,12 @@ con precisione — questo crea un momento di ancoraggio forte per chi ascolta"""
         else:
             segment_block = ""
 
-        length_instruction = (
-            f"Almeno {words_range} parole — scrivi finché hai coperto TUTTO il materiale "
-            f"(tipicamente {minutes_range} minuti di audio, ma non fermarti prima)"
-            if is_exam else
-            f"~{words_range} parole ({minutes_range} minuti di audio)"
+        context_block = (
+            f"\n\nARGOMENTI GIÀ TRATTATI nei segmenti precedenti — NON ripetere, NON riepilogare, prosegui direttamente:\n{previous_context}"
+            if previous_context else ""
         )
+
+        length_instruction = f"~{words_range} parole ({minutes_range} minuti di audio) — rispetta il range"
         extra_block = exam_block or complete_block
 
         return f"""Sei un produttore di podcast educativi di alto livello.
@@ -281,7 +282,7 @@ Requisiti dello script:
 - {length_instruction}
 - Interjections naturali: "Aspetta—", "Quindi vuoi dire che…", "Esatto, e questo è fondamentale perché…"{extra_block}
 
-Livello di dettaglio: {detail_desc}{topic_block}{segment_block}
+Livello di dettaglio: {detail_desc}{topic_block}{context_block}{segment_block}
 
 FORMATO OBBLIGATORIO — una battuta per riga, nessun altro testo:
 MARCO: [testo della battuta]
@@ -347,12 +348,12 @@ precisely — this creates a strong anchor moment for the listener"""
         else:
             segment_block = ""
 
-        length_instruction = (
-            f"At least {words_range} words — write until you have covered ALL the material "
-            f"(typically {minutes_range} minutes of audio, but do not stop early)"
-            if is_exam else
-            f"~{words_range} words ({minutes_range} minutes of audio)"
+        context_block = (
+            f"\n\nTOPICS ALREADY COVERED in previous segments — do NOT repeat, do NOT recap, continue directly:\n{previous_context}"
+            if previous_context else ""
         )
+
+        length_instruction = f"~{words_range} words ({minutes_range} minutes of audio) — stay within this range"
         extra_block = exam_block or complete_block
 
         return f"""You are a high-quality educational podcast producer.
@@ -367,7 +368,7 @@ Script requirements:
 - {length_instruction}
 - Natural interjections: "Wait—", "So you're saying that…", "Exactly, and that matters because…"{extra_block}
 
-Detail level: {detail_desc}{topic_block}{segment_block}
+Detail level: {detail_desc}{topic_block}{context_block}{segment_block}
 
 MANDATORY FORMAT — one line per turn, nothing else:
 ALEX: [line text]
@@ -384,6 +385,7 @@ def _generate_chunk_script(
     topic: str,
     config: dict,
     segment_role: str | None,
+    previous_context: str = "",
 ) -> str:
     system = _build_system_prompt(
         language,
@@ -392,6 +394,7 @@ def _generate_chunk_script(
         config["minutes_range"],
         topic,
         segment_role,
+        previous_context=previous_context,
     )
     if language == "it":
         user_content = (
@@ -416,6 +419,12 @@ def _generate_chunk_script(
 # ---------------------------------------------------------------------------
 # 5. Script parsing
 # ---------------------------------------------------------------------------
+def _extract_topics_header(script: str, max_lines: int = 8) -> str:
+    """Estrae le prime battute dello script per indicare al chunk successivo gli argomenti già trattati."""
+    lines = [l.strip() for l in script.strip().splitlines() if l.strip()]
+    return "\n".join(lines[:max_lines])
+
+
 def parse_script(script: str) -> list[tuple[str, str]]:
     """Parse a script string into a list of (SPEAKER, text) tuples."""
     lines: list[tuple[str, str]] = []
@@ -432,9 +441,17 @@ def parse_script(script: str) -> list[tuple[str, str]]:
 # ---------------------------------------------------------------------------
 # 6. TTS synthesis
 # ---------------------------------------------------------------------------
-async def _synthesize_line(text: str, voice: str, path: str) -> None:
-    communicate = edge_tts.Communicate(text, voice)
-    await communicate.save(path)
+async def _synthesize_line(text: str, voice: str, path: str, retries: int = 3) -> None:
+    for attempt in range(retries):
+        try:
+            communicate = edge_tts.Communicate(text, voice)
+            await communicate.save(path)
+            return
+        except Exception:
+            if attempt < retries - 1:
+                await asyncio.sleep(1.5 * (attempt + 1))
+            else:
+                raise
 
 
 async def _lines_to_audio_segment(
@@ -455,6 +472,9 @@ async def _lines_to_audio_segment(
             combined += AudioSegment.from_mp3(tmp) + inter_silence
             if progress_cb:
                 progress_cb(global_offset + i + 1, total_lines)
+            # piccola pausa tra le chiamate TTS per evitare rate limiting
+            if i < len(lines) - 1:
+                await asyncio.sleep(0.1)
 
     return combined
 
@@ -511,6 +531,7 @@ def generate_podcast(
     # ── Generate scripts ──────────────────────────────────────────────────────
     scripts: list[str] = []
     all_lines: list[list[tuple[str, str]]] = []
+    previous_context: str = ""
 
     for i, chunk in enumerate(chunks):
         if n == 1:
@@ -527,7 +548,10 @@ def generate_podcast(
         else:
             _status("Generazione script…")
 
-        script = _generate_chunk_script(chunk, language, detail_level, topic, config, role)
+        script = _generate_chunk_script(
+            chunk, language, detail_level, topic, config, role,
+            previous_context=previous_context,
+        )
         lines = parse_script(script)
         if not lines:
             raise ValueError(
@@ -535,6 +559,7 @@ def generate_podcast(
             )
         scripts.append(script)
         all_lines.append(lines)
+        previous_context = _extract_topics_header(script)
 
     # ── Build audio ───────────────────────────────────────────────────────────
     total_lines = sum(len(l) for l in all_lines)
@@ -554,7 +579,11 @@ def generate_podcast(
         return combined
 
     _status("Sintesi audio in corso…")
-    final_audio = asyncio.run(_assemble())
+    loop = asyncio.new_event_loop()
+    try:
+        final_audio = loop.run_until_complete(_assemble())
+    finally:
+        loop.close()
 
     filename = f"podcast_{notebook_id}_{int(time.time())}.mp3"
     output_path = os.path.join(OUTPUTS_DIR, filename)

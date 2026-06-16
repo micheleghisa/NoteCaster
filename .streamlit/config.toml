@@ -1,6 +1,7 @@
 [server]
 maxUploadSize = 100
 enableXsrfProtection = false
+headlessTimeout = 7200
 
 [theme]
 primaryColor = "#1e3a5f"

@@ -7,7 +7,7 @@ def _get_client() -> OpenAI:
     key = os.environ.get("DEEPSEEK_API_KEY")
     if not key:
         raise RuntimeError("DEEPSEEK_API_KEY non trovata nel file .env")
-    return OpenAI(api_key=key, base_url="https://api.deepseek.com")
+    return OpenAI(api_key=key, base_url="https://api.deepseek.com", timeout=180.0)
 
 
 def chat(messages: list[dict], model: str = "deepseek-chat", temperature: float = 0.7, max_tokens: int = 4096) -> str:

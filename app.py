@@ -872,12 +872,12 @@ with tab_podcast:
         _TIME_HINTS = {
             "Panoramica": "~3-5 min",
             "Approfondito": "~12-18 min",
-            "Completo": "~30-40 min",
-            "Dettagliato (esame)": "~20-28 min per sezione",
+            "Completo": "~15-20 min",
+            "Dettagliato (esame)": "~35-40 min",
             "Overview": "~3-5 min",
             "In-depth": "~12-18 min",
-            "Complete": "~30-40 min",
-            "Detailed (exam)": "~20-28 min per section",
+            "Complete": "~15-20 min",
+            "Detailed (exam)": "~35-40 min",
         }
         st.markdown(
             f'<div class="time-pill">⏱ Durata stimata: {_TIME_HINTS.get(detail_level, "—")}</div>',
