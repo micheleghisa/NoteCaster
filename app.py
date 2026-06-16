@@ -341,6 +341,16 @@ components.html("""
     }
 
     injectElements();
+
+    /* MutationObserver: hide trigger buttons the instant Streamlit adds them to the DOM,
+       before the browser paints — works on first login and every subsequent rerun */
+    if (!window.parent._ncObserver) {
+        window.parent._ncObserver = new MutationObserver(function() {
+            hideTriggerButtons();
+        });
+        window.parent._ncObserver.observe(pd.body, { childList: true, subtree: true });
+    }
+
     setTimeout(injectElements, 400);
     setTimeout(injectElements, 1500);
     setTimeout(injectElements, 3500);
