@@ -33,7 +33,7 @@ st.set_page_config(
     page_title="NoteCaster — Podcast dalle sbobbine",
     page_icon="🎙️",
     layout="wide",
-    initial_sidebar_state="auto",
+    initial_sidebar_state="collapsed",
 )
 
 # ── CSS ────────────────────────────────────────────────────────────────────────
@@ -41,58 +41,30 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 *, *::before, *::after { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important; }
-.stApp {
-    background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 50%, #e8f4fd 100%) !important;
-    background-attachment: fixed !important;
+
+/* Hide Streamlit chrome */
+#MainMenu, footer, [data-testid="stToolbar"] { visibility: hidden; display: none !important; }
+[data-testid="stHeader"] { display: none !important; }
+[data-testid="stSidebar"] { display: none !important; }
+[data-testid="stSidebarCollapseButton"] { display: none !important; }
+[data-testid="collapsedControl"] { display: none !important; }
+
+/* Transparent app background — our injected bg shows through */
+.stApp, [data-testid="stAppViewContainer"] {
+    background: transparent !important;
 }
 
-#MainMenu, footer, [data-testid="stToolbar"] { visibility: hidden; display: none; }
-[data-testid="stHeader"] { background: transparent !important; }
-
-[data-testid="stSidebar"] {
-    background: linear-gradient(160deg, #0f172a 0%, #1e293b 40%, #0d1e35 100%) !important;
-    border-right: 1px solid rgba(30,58,95,0.4) !important;
-}
-[data-testid="stSidebar"] * { color: #e2e8f0 !important; }
-[data-testid="stSidebar"] .stCaption, [data-testid="stSidebar"] caption { color: #7aa3c4 !important; }
-[data-testid="stSidebar"] input[type="text"] {
-    background: rgba(255,255,255,0.08) !important;
-    border: 1px solid rgba(30,58,95,0.4) !important;
-    border-radius: 10px !important;
-    color: #f0f9ff !important;
-}
-[data-testid="stSidebar"] input[type="text"]::placeholder { color: #64748b !important; }
-[data-testid="stSidebar"] .stButton button {
-    background: rgba(255,255,255,0.07) !important;
-    border: 1px solid rgba(255,255,255,0.15) !important;
-    color: #e2e8f0 !important;
-    border-radius: 10px !important;
-    transition: all 0.2s ease !important;
-}
-[data-testid="stSidebar"] .stButton button:hover {
-    background: rgba(30,58,95,0.25) !important;
-    border-color: rgba(30,58,95,0.6) !important;
-}
-[data-testid="stSidebar"] .stButton button[kind="primary"] {
-    background: linear-gradient(135deg, #1e3a5f, #2563eb) !important;
-    border: none !important;
-    color: #ffffff !important;
-    box-shadow: 0 2px 8px rgba(30,58,95,0.4) !important;
-}
-[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
-    background: rgba(30,58,95,0.12) !important;
-    border: 2px dashed rgba(30,58,95,0.5) !important;
-    border-radius: 12px !important;
-}
-[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] * { color: #93c5fd !important; }
-[data-testid="stSidebar"] hr { border-color: rgba(30,58,95,0.25) !important; }
-[data-testid="stSidebar"] .stAlert {
-    background: rgba(30,58,95,0.15) !important;
-    border: 1px solid rgba(30,58,95,0.3) !important;
-    border-radius: 10px !important;
-    color: #e2e8f0 !important;
+/* Padding-top for the fixed navbar */
+.main .block-container, [data-testid="stMainBlockContainer"] {
+    padding-top: 76px !important;
+    max-width: 1120px !important;
+    position: relative !important;
+    z-index: 1 !important;
 }
 
+/* Trigger buttons are hidden via JS (found by text content) */
+
+/* Primary buttons */
 .main .stButton button[kind="primary"] {
     background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%) !important;
     border: none !important;
@@ -133,10 +105,10 @@ st.markdown("""
 [data-testid="stProgressBar"] > div > div > div > div {
     background: linear-gradient(90deg, #1e3a5f, #2563eb, #0ea5e9, #0284c7, #1e3a5f) !important;
     background-size: 200% 100% !important;
-    animation: shimmer 2s linear infinite !important;
+    animation: nc-shimmer 2s linear infinite !important;
     border-radius: 999px !important;
 }
-@keyframes shimmer {
+@keyframes nc-shimmer {
     0%   { background-position: 200% center; }
     100% { background-position: -200% center; }
 }
@@ -154,85 +126,6 @@ details[data-testid="stExpander"] {
     border-radius: 14px !important;
     background: rgba(30,58,95,0.04) !important;
 }
-
-/* ── Responsive sidebar ───────────────────────────────────────── */
-
-/* Desktop ≥ 1024 px: sidebar sempre aperta, nessun bottone toggle */
-@media (min-width: 1024px) {
-    [data-testid="stSidebarCollapseButton"] { display: none !important; }
-    [data-testid="stSidebarCollapsed"]       { display: none !important; }
-    [data-testid="stSidebar"] {
-        transform: none !important;
-        min-width: 244px !important;
-        visibility: visible !important;
-    }
-}
-
-/* Tablet 768–1023 px: sidebar collassabile, mostra il bottone toggle */
-@media (min-width: 768px) and (max-width: 1023px) {
-    [data-testid="stSidebarCollapseButton"] {
-        display: flex !important;
-        color: #93c5fd !important;
-    }
-    [data-testid="stSidebarCollapseButton"] svg { fill: #93c5fd !important; }
-}
-
-/* Mobile < 768 px: sidebar nascosta di default, hamburger stilizzato */
-@media (max-width: 767px) {
-    [data-testid="stSidebarCollapseButton"] { display: flex !important; }
-
-    /* Bottone hamburger (appare quando la sidebar è chiusa) */
-    [data-testid="collapsedControl"] {
-        background: linear-gradient(135deg, #1e3a5f, #2563eb) !important;
-        border-radius: 10px !important;
-        box-shadow: 0 4px 12px rgba(30,58,95,0.4) !important;
-        padding: 4px !important;
-    }
-    [data-testid="collapsedControl"] svg { fill: #ffffff !important; }
-
-    /* Le colonne Streamlit diventano verticali su mobile */
-    [data-testid="stHorizontalBlock"] { flex-direction: column !important; }
-    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
-        width: 100% !important;
-        flex: none !important;
-        min-width: 100% !important;
-    }
-
-    /* Respiro extra in cima al contenuto principale */
-    .main .block-container { padding-top: 2rem !important; }
-}
-
-/* Hint sidebar: visibilità responsive */
-.hint-desktop { display: inline !important; }
-.hint-mobile  { display: none !important; }
-@media (max-width: 767px) {
-    .hint-desktop { display: none !important; }
-    .hint-mobile  { display: inline !important; }
-}
-
-/* Mobile FAB (Floating Action Button) per aprire il notebook manager.
-   Iniettato nel DOM parent via components.html — visibile solo su <1024px. */
-#nc-fab {
-    position: fixed;
-    bottom: 24px;
-    right: 20px;
-    z-index: 999999;
-    width: 58px;
-    height: 58px;
-    border-radius: 50%;
-    border: none;
-    background: linear-gradient(135deg, #1e3a5f, #2563eb);
-    color: #fff;
-    font-size: 24px;
-    cursor: pointer;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 20px rgba(30,58,95,0.5);
-    transition: transform .15s ease, box-shadow .15s ease;
-}
-#nc-fab:active { transform: scale(.91); }
-@media (max-width: 1023px) { #nc-fab { display: flex !important; } }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -273,8 +166,187 @@ details[data-testid="stExpander"] {
     font-weight: 600;
     margin-bottom: 0.75rem;
 }
+
+/* Mobile: stack columns vertically */
+@media (max-width: 767px) {
+    [data-testid="stHorizontalBlock"] { flex-direction: column !important; }
+    [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        width: 100% !important;
+        flex: none !important;
+        min-width: 100% !important;
+    }
+}
 </style>
 """, unsafe_allow_html=True)
+
+# ── NAVBAR + BACKGROUND INJECTION (always present, before auth) ────────────────
+components.html("""
+<script>
+(function () {
+    var pd = window.parent.document;
+    if (!pd) return;
+
+    /* ── Inject CSS ── */
+    if (!pd.getElementById('nc-injected-css')) {
+        var style = pd.createElement('style');
+        style.id = 'nc-injected-css';
+        style.textContent = [
+            /* Animated background */
+            '.nc-app-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:linear-gradient(135deg,#f0f4f8 0%,#e8f0fe 50%,#f0f4f8 100%);}',
+            '.nc-app-bg::before{content:"";position:absolute;top:-50%;right:-20%;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(14,165,233,.06) 0%,transparent 70%);animation:ncOrbA 12s ease-in-out infinite;}',
+            '.nc-app-bg::after{content:"";position:absolute;bottom:-30%;left:-10%;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(30,58,95,.05) 0%,transparent 70%);animation:ncOrbB 15s ease-in-out infinite;}',
+            '.nc-shape{position:absolute;border-radius:50%;opacity:.07;}',
+            '.nc-shape:nth-child(1){width:80px;height:80px;background:#0ea5e9;top:15%;left:10%;animation:ncPart 18s ease-in-out infinite;}',
+            '.nc-shape:nth-child(2){width:50px;height:50px;background:#1e3a5f;top:60%;left:5%;animation:ncPart 22s ease-in-out infinite reverse;}',
+            '.nc-shape:nth-child(3){width:100px;height:100px;background:#0ea5e9;top:30%;right:15%;animation:ncPart 20s ease-in-out infinite 3s;}',
+            '.nc-shape:nth-child(4){width:40px;height:40px;background:#2563eb;bottom:20%;right:25%;animation:ncPart 16s ease-in-out infinite 5s;}',
+            '.nc-shape:nth-child(5){width:60px;height:60px;background:#0ea5e9;top:70%;right:10%;animation:ncPart 24s ease-in-out infinite 2s;}',
+            '.nc-shape:nth-child(6){width:30px;height:30px;background:#1e3a5f;top:10%;left:40%;animation:ncPart 14s ease-in-out infinite 4s;}',
+            '.nc-pill{position:absolute;border-radius:999px;opacity:.07;}',
+            '.nc-pill:nth-child(7){width:60px;height:24px;background:#0ea5e9;top:40%;left:20%;animation:ncPillA 15s ease-in-out infinite;}',
+            '.nc-pill:nth-child(8){width:80px;height:20px;background:#2563eb;top:75%;left:35%;animation:ncPillA 18s ease-in-out infinite reverse;}',
+            '.nc-dna{position:absolute;top:8%;right:4%;width:60px;height:200px;animation:ncDna 20s ease-in-out infinite;}',
+            '@keyframes ncOrbA{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-40px) scale(1.05)}66%{transform:translate(-20px,20px) scale(0.95)}}',
+            '@keyframes ncOrbB{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-40px,30px) scale(1.08)}}',
+            '@keyframes ncPart{0%,100%{transform:translate(0,0) rotate(0deg)}25%{transform:translate(30px,-40px) rotate(90deg)}50%{transform:translate(-20px,-80px) rotate(180deg)}75%{transform:translate(-50px,-20px) rotate(270deg)}}',
+            '@keyframes ncPillA{0%,100%{transform:translate(0,0) rotate(0deg)}25%{transform:translate(40px,-30px) rotate(45deg)}50%{transform:translate(-20px,-60px) rotate(90deg)}75%{transform:translate(-40px,-10px) rotate(135deg)}}',
+            '@keyframes ncDna{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-20px) rotate(5deg)}}',
+            /* Navbar */
+            '#nc-navbar{position:fixed;top:0;left:0;right:0;z-index:99999;padding:14px 0;transition:all .25s ease;font-family:"Inter",-apple-system,BlinkMacSystemFont,sans-serif;}',
+            '#nc-navbar.scrolled{background:rgba(255,255,255,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 1px 8px rgba(0,0,0,.06);padding:10px 0;}',
+            '.nc-nav-inner{width:100%;max-width:1120px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;}',
+            '.nc-logo{display:flex;align-items:center;gap:8px;font-size:1.2rem;font-weight:700;color:#0f172a;text-decoration:none;cursor:default;letter-spacing:-.3px;}',
+            '.nc-logo span{font-size:1.4rem;}',
+            '.nc-nav-links{display:flex;align-items:center;gap:28px;}',
+            '.nc-nav-link{font-size:.88rem;font-weight:500;color:#475569;text-decoration:none;cursor:pointer;transition:color .25s ease;background:none;border:none;padding:0;font-family:inherit;}',
+            '.nc-nav-link:hover{color:#0f172a;}',
+            '.nc-nav-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .3s cubic-bezier(.4,0,.2,1);box-shadow:0 4px 14px rgba(37,99,235,.3);animation:ncNavGlow 3s ease-in-out infinite;}',
+            '.nc-nav-btn:hover{background:#1d4ed8;box-shadow:0 6px 24px rgba(37,99,235,.45);transform:translateY(-2px);animation:none;}',
+            '@keyframes ncNavGlow{0%,100%{box-shadow:0 4px 14px rgba(37,99,235,.3)}50%{box-shadow:0 4px 28px rgba(37,99,235,.55),0 0 40px rgba(37,99,235,.15)}}',
+            '.nc-hamburger{display:none;background:none;border:none;cursor:pointer;padding:8px;color:#1e293b;}',
+            '.nc-hamburger svg{width:26px;height:26px;stroke:currentColor;}',
+            /* Mobile menu */
+            '#nc-mobile-menu{display:none;position:fixed;inset:0;z-index:99998;background:rgba(255,255,255,.98);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);flex-direction:column;align-items:center;justify-content:center;gap:24px;font-family:"Inter",sans-serif;}',
+            '#nc-mobile-menu.open{display:flex;}',
+            '.nc-mob-link{font-size:1.2rem;font-weight:500;color:#1e293b;text-decoration:none;cursor:pointer;background:none;border:none;font-family:inherit;}',
+            '.nc-mob-close{position:absolute;top:20px;right:24px;background:none;border:none;font-size:1.6rem;cursor:pointer;color:#1e293b;}',
+            '@media(max-width:768px){.nc-nav-links{display:none!important}.nc-hamburger{display:block!important}}'
+        ].join('');
+        pd.head.appendChild(style);
+    }
+
+    function hideTriggerButtons() {
+        var targets = ['☰ Notebook', '☰ Crea', '☰ Sbobine'];
+        var btns = pd.querySelectorAll('button');
+        for (var b = 0; b < btns.length; b++) {
+            if (targets.indexOf((btns[b].textContent || '').trim()) >= 0) {
+                var row = btns[b].closest('[data-testid="stHorizontalBlock"]');
+                if (row && !row._ncHidden) {
+                    row.style.position = 'fixed';
+                    row.style.left = '-9999px';
+                    row.style.top = '0';
+                    row._ncHidden = true;
+                }
+            }
+        }
+    }
+
+    function injectElements() {
+        hideTriggerButtons();
+
+        /* Background */
+        if (!pd.getElementById('nc-app-bg')) {
+            var bg = pd.createElement('div');
+            bg.id = 'nc-app-bg';
+            bg.className = 'nc-app-bg';
+            bg.innerHTML = '<div class="nc-shape"></div><div class="nc-shape"></div><div class="nc-shape"></div><div class="nc-shape"></div><div class="nc-shape"></div><div class="nc-shape"></div><div class="nc-pill"></div><div class="nc-pill"></div>' +
+                '<svg class="nc-dna" viewBox="0 0 60 200" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+                '<path d="M30 0 C10 25,50 50,30 75 C10 100,50 125,30 150 C10 175,50 200,30 200" stroke="#0ea5e9" stroke-width="1.5" opacity="0.2"/>' +
+                '<path d="M30 0 C50 25,10 50,30 75 C50 100,10 125,30 150 C50 175,10 200,30 200" stroke="#2563eb" stroke-width="1.5" opacity="0.15"/>' +
+                '</svg>';
+            pd.body.insertBefore(bg, pd.body.firstChild);
+        }
+
+        /* Navbar */
+        if (!pd.getElementById('nc-navbar')) {
+            var nav = pd.createElement('nav');
+            nav.id = 'nc-navbar';
+            nav.innerHTML =
+                '<div class="nc-nav-inner">' +
+                  '<div class="nc-logo"><span>🎙️</span> NoteCaster</div>' +
+                  '<div class="nc-nav-links">' +
+                    '<button class="nc-nav-link nc-open-nb" data-nc-action="notebooks">📚 I tuoi Notebook</button>' +
+                    '<button class="nc-nav-link nc-open-nb" data-nc-action="indexed">Sbobine indicizzate</button>' +
+                    '<button class="nc-nav-btn nc-open-nb" data-nc-action="create">+ Crea Notebook</button>' +
+                  '</div>' +
+                  '<button class="nc-hamburger" id="nc-hamburger" aria-label="Menu">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                      '<path d="M3 12h18M3 6h18M3 18h18"/>' +
+                    '</svg>' +
+                  '</button>' +
+                '</div>';
+            var bgEl = pd.getElementById('nc-app-bg');
+            pd.body.insertBefore(nav, bgEl ? bgEl.nextSibling : pd.body.firstChild);
+
+            /* Mobile menu */
+            var mob = pd.createElement('div');
+            mob.id = 'nc-mobile-menu';
+            mob.innerHTML =
+                '<button class="nc-mob-close" id="nc-mob-close">✕</button>' +
+                '<button class="nc-mob-link nc-open-nb" data-nc-action="notebooks">📚 I tuoi Notebook</button>' +
+                '<button class="nc-mob-link nc-open-nb" data-nc-action="indexed">Sbobine indicizzate</button>' +
+                '<button class="nc-mob-link nc-open-nb" data-nc-action="create">+ Crea Notebook</button>';
+            pd.body.appendChild(mob);
+
+            pd.getElementById('nc-hamburger').addEventListener('click', function () {
+                pd.getElementById('nc-mobile-menu').classList.add('open');
+            });
+            pd.getElementById('nc-mob-close').addEventListener('click', function () {
+                pd.getElementById('nc-mobile-menu').classList.remove('open');
+            });
+
+            pd.querySelectorAll('.nc-open-nb').forEach(function (el) {
+                el.addEventListener('click', function () {
+                    pd.getElementById('nc-mobile-menu').classList.remove('open');
+                    clickNotebookBtn(pd, el.getAttribute('data-nc-action') || 'notebooks');
+                });
+            });
+        }
+
+        /* Scroll effect */
+        if (!window.parent._ncScrollAttached) {
+            window.parent._ncScrollAttached = true;
+            window.parent.addEventListener('scroll', function () {
+                var nav = pd.getElementById('nc-navbar');
+                if (nav) nav.classList.toggle('scrolled', window.parent.scrollY > 50);
+            });
+        }
+    }
+
+    function clickNotebookBtn(pd, action) {
+        var targetMap = {
+            'notebooks': '☰ Notebook',
+            'create':    '☰ Crea',
+            'indexed':   '☰ Sbobine'
+        };
+        var target = targetMap[action] || '☰ Notebook';
+        var buttons = pd.querySelectorAll('button');
+        for (var i = 0; i < buttons.length; i++) {
+            if ((buttons[i].textContent || '').trim() === target) {
+                buttons[i].click();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    injectElements();
+    setTimeout(injectElements, 400);
+    setTimeout(injectElements, 1500);
+    setTimeout(injectElements, 3500);
+})();
+</script>
+""", height=0, scrolling=False)
 
 # ── Auth ───────────────────────────────────────────────────────────────────────
 _cookie_mgr = stx.CookieManager(key="nc_cookie_manager")
@@ -371,106 +443,135 @@ user = st.session_state["user"]
 def _notebook_manager_dialog():
     _u = st.session_state["user"]
 
-    st.markdown(
-        '<p style="font-size:.75rem;font-weight:700;text-transform:uppercase;'
-        'letter-spacing:1px;color:#1e3a5f;margin-bottom:6px;">Nuovo Notebook</p>',
+    # User info + logout
+    _ucol, _lcol = st.columns([4, 1])
+    _ucol.markdown(
+        f'<p style="font-size:0.78rem;color:#64748b;margin:4px 0;">👤 {_u["email"]}</p>',
         unsafe_allow_html=True,
     )
-    _c1, _c2 = st.columns([3, 1])
-    _dlg_name = _c1.text_input(
-        "Nome", placeholder="Es: Cardiologia",
-        key="dlg_nb_name", label_visibility="collapsed",
-    )
-    if _c2.button("＋", key="dlg_add_nb", use_container_width=True, type="primary"):
-        if _dlg_name.strip():
-            _nb = create_notebook(_dlg_name.strip(), user_id=_u["id"])
-            st.session_state.active_notebook = _nb
-            st.rerun()
+    if _lcol.button("Esci", key="dlg_logout", use_container_width=True):
+        _cookie_mgr.delete("nc_refresh")
+        del st.session_state["user"]
+        st.session_state.active_notebook = None
+        st.session_state.chat_history = []
+        st.rerun()
 
+    # Section selector (driven by which navbar button was clicked)
+    _section = st.radio(
+        "",
+        options=["📚 I tuoi Notebook", "➕ Crea Notebook", "📁 Sbobine indicizzate"],
+        index=["notebooks", "create", "indexed"].index(
+            st.session_state.get("_dialog_section", "notebooks")
+        ),
+        horizontal=True,
+        label_visibility="collapsed",
+        key="dlg_section_radio",
+    )
     st.divider()
 
-    st.markdown(
-        '<p style="font-size:.75rem;font-weight:700;text-transform:uppercase;'
-        'letter-spacing:1px;color:#1e3a5f;margin-bottom:6px;">I tuoi Notebook</p>',
-        unsafe_allow_html=True,
-    )
-    _nbs = get_notebooks(user_id=_u["id"])
-    if not _nbs:
-        st.info("Nessun notebook. Creane uno sopra.")
-    else:
-        for _nb in _nbs:
-            _dcnt = len(get_indexed_docs(_nb["id"]))
-            _active = (st.session_state.active_notebook or {}).get("id") == _nb["id"]
-            _cn, _cd = st.columns([5, 1])
-            if _cn.button(
-                f"{'▶ ' if _active else ''}{_nb['name']} ({_dcnt} doc)",
-                key=f"dlg_nb_{_nb['id']}",
-                type="primary" if _active else "secondary",
-                use_container_width=True,
-            ):
-                if not _active:
-                    st.session_state.active_notebook = _nb
+    # ── Sezione: I tuoi Notebook ──────────────────────────────────────────────
+    if _section == "📚 I tuoi Notebook":
+        _nbs = get_notebooks(user_id=_u["id"])
+        if not _nbs:
+            st.info("Nessun notebook. Vai su 'Crea Notebook' per iniziare.")
+        else:
+            for _nb in _nbs:
+                _dcnt = len(get_indexed_docs(_nb["id"]))
+                _active = (st.session_state.active_notebook or {}).get("id") == _nb["id"]
+                _cn, _cd = st.columns([5, 1])
+                if _cn.button(
+                    f"{'▶ ' if _active else ''}{_nb['name']} ({_dcnt} doc)",
+                    key=f"dlg_nb_{_nb['id']}",
+                    type="primary" if _active else "secondary",
+                    use_container_width=True,
+                ):
+                    if not _active:
+                        st.session_state.active_notebook = _nb
+                        st.rerun()
+                if _cd.button("🗑", key=f"dlg_del_{_nb['id']}"):
+                    st.session_state[f"dlg_cdel_{_nb['id']}"] = True
                     st.rerun()
-            if _cd.button("🗑", key=f"dlg_del_{_nb['id']}"):
-                st.session_state[f"dlg_cdel_{_nb['id']}"] = True
-                st.rerun()
-            if st.session_state.get(f"dlg_cdel_{_nb['id']}"):
-                st.warning(f"Eliminare '{_nb['name']}'?")
-                _cy, _cn2 = st.columns(2)
-                if _cy.button("Sì, elimina", key=f"dlg_y_{_nb['id']}", type="primary"):
-                    delete_notebook(_nb["id"], user_id=_u["id"])
-                    delete_notebook_index(_nb["id"])
-                    if (st.session_state.active_notebook or {}).get("id") == _nb["id"]:
-                        st.session_state.active_notebook = None
-                    del st.session_state[f"dlg_cdel_{_nb['id']}"]
-                    st.rerun()
-                if _cn2.button("Annulla", key=f"dlg_n_{_nb['id']}"):
-                    del st.session_state[f"dlg_cdel_{_nb['id']}"]
-                    st.rerun()
+                if st.session_state.get(f"dlg_cdel_{_nb['id']}"):
+                    st.warning(f"Eliminare '{_nb['name']}'?")
+                    _cy, _cn2 = st.columns(2)
+                    if _cy.button("Sì, elimina", key=f"dlg_y_{_nb['id']}", type="primary"):
+                        delete_notebook(_nb["id"], user_id=_u["id"])
+                        delete_notebook_index(_nb["id"])
+                        if (st.session_state.active_notebook or {}).get("id") == _nb["id"]:
+                            st.session_state.active_notebook = None
+                        del st.session_state[f"dlg_cdel_{_nb['id']}"]
+                        st.rerun()
+                    if _cn2.button("Annulla", key=f"dlg_n_{_nb['id']}"):
+                        del st.session_state[f"dlg_cdel_{_nb['id']}"]
+                        st.rerun()
 
-    _anb = st.session_state.active_notebook
-    if _anb:
-        st.divider()
-        st.markdown(f"**📁 {_anb['name']}**")
-        _indexed = get_indexed_docs(_anb["id"])
-        for _d in _indexed:
-            st.caption(f"• {_d}")
-        if not _indexed:
-            st.caption("Nessuna sbobina ancora.")
-        _up = st.file_uploader(
-            "Carica sbobine", type=["pdf", "docx", "txt", "md"],
-            accept_multiple_files=True, key=f"dlg_up_{_anb['id']}",
+    # ── Sezione: Crea Notebook ────────────────────────────────────────────────
+    elif _section == "➕ Crea Notebook":
+        st.markdown(
+            '<p style="font-size:.9rem;color:#64748b;margin-bottom:12px;">'
+            'Dai un nome al tuo notebook (es: Cardiologia, Patologia Anno 3…)</p>',
+            unsafe_allow_html=True,
         )
-        if st.button("📥 Indicizza", key="dlg_idx", disabled=not _up, use_container_width=True):
-            _prog = st.progress(0)
-            _results = []
-            for _i, _f in enumerate(_up):
-                _prog.progress((_i + 1) / len(_up))
-                _sfx = Path(_f.name).suffix
-                with tempfile.NamedTemporaryFile(suffix=_sfx, delete=False) as _tmp:
-                    _tmp.write(_f.read())
-                    _tp = _tmp.name
-                try:
-                    _txt = extract_text(_tp)
-                    if not _txt.strip():
-                        _results.append(f"⚠️ {_f.name}: nessun testo")
-                        continue
-                    _cks = chunk_text(_txt)
-                    _added = index_document(_anb["id"], _f.name, _cks)
-                    _results.append(f"✓ {_f.name} ({_added} chunk)")
-                except ValueError as _e:
-                    _results.append(f"✗ {_f.name}: {_e}")
-                finally:
-                    os.unlink(_tp)
-            _prog.empty()
-            for _r in _results:
-                if _r.startswith("✓"):
-                    st.success(_r)
-                elif _r.startswith("⚠"):
-                    st.warning(_r)
-                else:
-                    st.error(_r)
-            st.rerun()
+        _c1, _c2 = st.columns([3, 1])
+        _dlg_name = _c1.text_input(
+            "Nome", placeholder="Es: Cardiologia",
+            key="dlg_nb_name", label_visibility="collapsed",
+        )
+        if _c2.button("Crea →", key="dlg_add_nb", use_container_width=True, type="primary"):
+            if _dlg_name.strip():
+                _nb = create_notebook(_dlg_name.strip(), user_id=_u["id"])
+                st.session_state.active_notebook = _nb
+                st.session_state["_dialog_section"] = "indexed"
+                st.rerun()
+            else:
+                st.error("Inserisci un nome per il notebook.")
+
+    # ── Sezione: Sbobine indicizzate ──────────────────────────────────────────
+    elif _section == "📁 Sbobine indicizzate":
+        _anb = st.session_state.active_notebook
+        if not _anb:
+            st.info("Seleziona prima un notebook dalla sezione 'I tuoi Notebook'.")
+        else:
+            st.markdown(f"**📁 {_anb['name']}**")
+            _indexed = get_indexed_docs(_anb["id"])
+            for _d in _indexed:
+                st.caption(f"• {_d}")
+            if not _indexed:
+                st.caption("Nessuna sbobina ancora.")
+            _up = st.file_uploader(
+                "Carica sbobine", type=["pdf", "docx", "txt", "md"],
+                accept_multiple_files=True, key=f"dlg_up_{_anb['id']}",
+            )
+            if st.button("📥 Indicizza", key="dlg_idx", disabled=not _up, use_container_width=True):
+                _prog = st.progress(0)
+                _results = []
+                for _i, _f in enumerate(_up):
+                    _prog.progress((_i + 1) / len(_up))
+                    _sfx = Path(_f.name).suffix
+                    with tempfile.NamedTemporaryFile(suffix=_sfx, delete=False) as _tmp:
+                        _tmp.write(_f.read())
+                        _tp = _tmp.name
+                    try:
+                        _txt = extract_text(_tp)
+                        if not _txt.strip():
+                            _results.append(f"⚠️ {_f.name}: nessun testo")
+                            continue
+                        _cks = chunk_text(_txt)
+                        _added = index_document(_anb["id"], _f.name, _cks)
+                        _results.append(f"✓ {_f.name} ({_added} chunk)")
+                    except ValueError as _e:
+                        _results.append(f"✗ {_f.name}: {_e}")
+                    finally:
+                        os.unlink(_tp)
+                _prog.empty()
+                for _r in _results:
+                    if _r.startswith("✓"):
+                        st.success(_r)
+                    elif _r.startswith("⚠"):
+                        st.warning(_r)
+                    else:
+                        st.error(_r)
+                st.rerun()
 
 # ── Session state ──────────────────────────────────────────────────────────────
 st.session_state.setdefault("active_notebook", None)
@@ -479,194 +580,18 @@ st.session_state.setdefault("last_notebook_id", None)
 
 NB_COLORS = ["#1e3a5f", "#2563eb", "#0ea5e9", "#ea580c", "#db2777", "#d97706"]
 
-# ── SIDEBAR ────────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("""
-    <div style="text-align:center; padding: 1.2rem 0.5rem 0.8rem;">
-        <div style="font-size: 2.4rem; margin-bottom:4px;">🎙️</div>
-        <div style="font-size: 1.4rem; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">NoteCaster</div>
-        <div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">Podcast dalle sbobbine</div>
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown(
-        f'<p style="font-size:0.7rem; color:#64748b; text-align:center; margin:0 0 4px;">{user["email"]}</p>',
-        unsafe_allow_html=True,
-    )
-    if st.button("Esci", use_container_width=True):
-        _cookie_mgr.delete("nc_refresh")
-        del st.session_state["user"]
-        st.session_state.active_notebook = None
-        st.session_state.chat_history = []
-        st.rerun()
-
-    st.divider()
-
-    st.markdown(
-        '<p style="font-size:0.68rem; font-weight:700; text-transform:uppercase; '
-        'letter-spacing:1.2px; color:#93c5fd; margin-bottom:6px;">Nuovo Notebook</p>',
-        unsafe_allow_html=True,
-    )
-    col1, col2 = st.columns([3, 1])
-    name_input = col1.text_input(
-        "Nome notebook",
-        placeholder="Es: Cardiologia",
-        label_visibility="collapsed",
-        key="new_nb_name",
-    )
-    if col2.button("＋", use_container_width=True):
-        if name_input.strip():
-            nb = create_notebook(name_input.strip(), user_id=user["id"])
-            st.session_state.active_notebook = nb
-            st.rerun()
-
-    st.divider()
-
-    st.markdown(
-        '<p style="font-size:0.68rem; font-weight:700; text-transform:uppercase; '
-        'letter-spacing:1.2px; color:#93c5fd; margin-bottom:6px;">I tuoi Notebook</p>',
-        unsafe_allow_html=True,
-    )
-    notebooks = get_notebooks(user_id=user["id"])
-    if not notebooks:
-        st.info("Nessun notebook. Creane uno sopra.")
-    else:
-        for idx, nb in enumerate(notebooks):
-            doc_count = len(get_indexed_docs(nb["id"]))
-            is_active = (st.session_state.active_notebook or {}).get("id") == nb["id"]
-            btn_label = f"{'▶ ' if is_active else ''}{nb['name']} ({doc_count} doc)"
-            col_nb, col_del = st.columns([5, 1])
-            if col_nb.button(
-                btn_label,
-                key=f"nb_{nb['id']}",
-                use_container_width=True,
-                type="primary" if is_active else "secondary",
-            ):
-                if not is_active:
-                    st.session_state.active_notebook = nb
-                    st.rerun()
-            if col_del.button("🗑", key=f"del_{nb['id']}", help="Elimina notebook"):
-                st.session_state[f"confirm_del_{nb['id']}"] = True
-                st.rerun()
-            if st.session_state.get(f"confirm_del_{nb['id']}"):
-                st.warning(f"Eliminare '{nb['name']}'?")
-                cc1, cc2 = st.columns(2)
-                if cc1.button("Sì, elimina", key=f"yes_del_{nb['id']}", type="primary"):
-                    delete_notebook(nb["id"], user_id=user["id"])
-                    delete_notebook_index(nb["id"])
-                    if (st.session_state.active_notebook or {}).get("id") == nb["id"]:
-                        st.session_state.active_notebook = None
-                    del st.session_state[f"confirm_del_{nb['id']}"]
-                    st.rerun()
-                if cc2.button("Annulla", key=f"no_del_{nb['id']}"):
-                    del st.session_state[f"confirm_del_{nb['id']}"]
-                    st.rerun()
-
-    # Upload section
-    active_nb_sidebar = st.session_state.active_notebook
-    if active_nb_sidebar:
-        st.divider()
-        st.markdown(
-            f'<p style="font-size:0.68rem; font-weight:700; text-transform:uppercase; '
-            f'letter-spacing:1.2px; color:#93c5fd; margin-bottom:6px;">📁 {active_nb_sidebar["name"]}</p>',
-            unsafe_allow_html=True,
-        )
-        indexed = get_indexed_docs(active_nb_sidebar["id"])
-        if indexed:
-            for d in indexed:
-                st.caption(f"• {d}")
-        else:
-            st.caption("Nessuna sbobina ancora.")
-
-        st.caption("Carica PDF, DOCX, TXT, MD")
-        uploaded = st.file_uploader(
-            "Carica sbobine",
-            type=["pdf", "docx", "txt", "md"],
-            accept_multiple_files=True,
-            key=f"uploader_{active_nb_sidebar['id']}",
-            label_visibility="collapsed",
-        )
-        if st.button("📥 Indicizza", use_container_width=True, disabled=not uploaded):
-            progress_bar = st.progress(0)
-            results = []
-            for i, f in enumerate(uploaded):
-                progress_bar.progress((i + 1) / len(uploaded))
-                suffix = Path(f.name).suffix
-                with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-                    tmp.write(f.read())
-                    tmp_path = tmp.name
-                try:
-                    text = extract_text(tmp_path)
-                    if not text.strip():
-                        results.append(f"⚠️ {f.name}: nessun testo (PDF scansionato?)")
-                        continue
-                    chunks = chunk_text(text)
-                    added = index_document(active_nb_sidebar["id"], f.name, chunks)
-                    results.append(f"✓ {f.name} ({added} chunk)")
-                except ValueError as e:
-                    results.append(f"✗ {f.name}: {e}")
-                finally:
-                    os.unlink(tmp_path)
-            progress_bar.empty()
-            for r in results:
-                if r.startswith("✓"):
-                    st.success(r)
-                elif r.startswith("⚠"):
-                    st.warning(r)
-                else:
-                    st.error(r)
-            st.rerun()
-
-# ── MOBILE FAB ────────────────────────────────────────────────────────────────
-# Inject a floating action button into the parent document via JS.
-# The FAB is only visible on screens < 1024px (CSS above) and opens the
-# notebook manager dialog by clicking Streamlit's sidebar toggle (with
-# fallback to the #nc-nb-btn trigger button below).
-components.html("""
-<script>
-(function () {
-    function setup() {
-        var pd = window.parent.document;
-        if (!pd || pd.getElementById('nc-fab')) return;
-
-        var fab = pd.createElement('button');
-        fab.id = 'nc-fab';
-        fab.title = 'Gestisci Notebook';
-        fab.textContent = '☰';   /* ☰ */
-
-        fab.addEventListener('click', function () {
-            /* Try Streamlit's own sidebar toggles first */
-            var sels = [
-                '[data-testid="stSidebarCollapsed"] button',
-                '[data-testid="collapsedControl"] button',
-                '[data-testid="stSidebarCollapseButton"] button',
-            ];
-            for (var i = 0; i < sels.length; i++) {
-                var el = pd.querySelector(sels[i]);
-                if (el) { el.click(); return; }
-            }
-            /* Fallback: click the "☰ Notebook" button by text content */
-            var buttons = pd.querySelectorAll('[data-testid="stButton"] button');
-            for (var j = 0; j < buttons.length; j++) {
-                if (buttons[j].textContent.indexOf('Notebook') >= 0) {
-                    buttons[j].click();
-                    return;
-                }
-            }
-        });
-        pd.body.appendChild(fab);
-    }
-    setup();
-    setTimeout(setup, 600);
-    setTimeout(setup, 2000);
-})();
-</script>
-""", height=0, scrolling=False)
-
 # ── MAIN AREA ──────────────────────────────────────────────────────────────────
-# "☰ Notebook" button — always visible, primary mobile navigation.
-# The JS FAB above clicks this button by text when the sidebar toggle is absent.
-_nb_btn_col = st.columns([1, 6])[0]
-if _nb_btn_col.button("☰ Notebook", key="_nb_panel_btn", use_container_width=True):
+# Three hidden trigger buttons — clicked by the injected navbar JS with data-nc-action.
+# CSS moves them off-screen; JS clicks them by matching button text.
+_tc1, _tc2, _tc3 = st.columns(3)
+if _tc1.button("☰ Notebook", key="_btn_nb_list"):
+    st.session_state["_dialog_section"] = "notebooks"
+    _notebook_manager_dialog()
+if _tc2.button("☰ Crea", key="_btn_nb_create"):
+    st.session_state["_dialog_section"] = "create"
+    _notebook_manager_dialog()
+if _tc3.button("☰ Sbobine", key="_btn_nb_indexed"):
+    st.session_state["_dialog_section"] = "indexed"
     _notebook_manager_dialog()
 
 if not st.session_state.active_notebook:
@@ -723,17 +648,9 @@ if not st.session_state.active_notebook:
         border: 1.5px solid rgba(30,58,95,0.2); border-radius: 14px;
         padding: 1rem 1.5rem; text-align: center; max-width: 400px; margin: 2rem auto 0;
     ">
-        <span class="hint-desktop">
-            <span style="font-size: 1.1rem;">👈</span>
-            <span style="font-weight: 700; color: #1e293b; font-size: 0.9rem; margin-left: 0.4rem;">
-                Inizia dalla sidebar
-            </span>
-        </span>
-        <span class="hint-mobile">
-            <span style="font-size: 1.1rem;">☰</span>
-            <span style="font-weight: 700; color: #1e293b; font-size: 0.9rem; margin-left: 0.4rem;">
-                Tocca <strong>☰ Notebook</strong> in alto
-            </span>
+        <span style="font-size: 1.1rem;">☰</span>
+        <span style="font-weight: 700; color: #1e293b; font-size: 0.9rem; margin-left: 0.4rem;">
+            Premi <strong>☰</strong> in alto a destra per iniziare
         </span>
     </div>
     """, unsafe_allow_html=True)
@@ -794,11 +711,11 @@ with tab_chat:
 
     chat_placeholder = (
         "Fai una domanda sui tuoi documenti..."
-        if has_docs else "Carica prima dei documenti nella sidebar"
+        if has_docs else "Carica prima dei documenti nel notebook (tocca ☰ in alto)"
     )
     if prompt := st.chat_input(chat_placeholder):
         if not has_docs:
-            st.warning("Carica prima dei documenti nel notebook (vedi sidebar).")
+            st.warning("Carica prima dei documenti nel notebook (tocca ☰ in alto).")
         else:
             st.session_state.chat_history.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
