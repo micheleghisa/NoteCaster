@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from src.db import create_notebook, get_notebooks, delete_notebook
 from src.auth import sign_in, sign_up, refresh_session
-from streamlit_cookies_controller import CookieController
+import extra_streamlit_components as stx
 import datetime
 from src.document_processor import extract_text, chunk_text
 from src.storage import (
@@ -277,38 +277,41 @@ details[data-testid="stExpander"] {
 """, unsafe_allow_html=True)
 
 # ── Auth ───────────────────────────────────────────────────────────────────────
-_cookies = CookieController()
+_cookie_mgr = stx.CookieManager(key="nc_cookie_manager")
 
-# CookieController needs one render cycle before .set() is safe.
-# Handle any token that was deferred from the previous render.
+# CookieManager needs one render cycle before .set() is safe.
+# Only delete _pending_cookie on successful set — don't lose the token on failure.
 if "_pending_cookie" in st.session_state:
+    pending = st.session_state["_pending_cookie"]
     try:
-        _cookies.set("nc_refresh", st.session_state.pop("_pending_cookie"),
-                     max_age=30 * 24 * 60 * 60)
+        _cookie_mgr.set(
+            "nc_refresh", pending,
+            expires_at=datetime.datetime.now() + datetime.timedelta(days=30),
+        )
+        del st.session_state["_pending_cookie"]
     except Exception:
-        pass
+        pass  # Retry on next render — pending stays in session_state
 
 if "user" not in st.session_state:
-    # CookieController needs one render cycle to read browser cookies via JS.
-    # On first load the component hasn't fired yet, so we force a single rerun.
+    # CookieManager needs one render cycle to read browser cookies via JS.
     if not st.session_state.get("_cookie_init"):
         st.session_state["_cookie_init"] = True
         st.rerun()
 
-    try:
-        saved_token = _cookies.get("nc_refresh")
-    except (TypeError, AttributeError):
-        saved_token = None
+    saved_token = _cookie_mgr.get("nc_refresh")
     if saved_token:
         try:
             res = refresh_session(saved_token)
-            if res.user:
+            if res and res.user:
                 st.session_state["user"] = {"id": str(res.user.id), "email": res.user.email}
-                _cookies.set("nc_refresh", res.session.refresh_token,
-                             max_age=30 * 24 * 60 * 60)
+                if res.session:
+                    _cookie_mgr.set(
+                        "nc_refresh", res.session.refresh_token,
+                        expires_at=datetime.datetime.now() + datetime.timedelta(days=30),
+                    )
                 st.rerun()
         except Exception:
-            _cookies.remove("nc_refresh")
+            _cookie_mgr.delete("nc_refresh")
 
 if "user" not in st.session_state:
     st.markdown("""
@@ -490,7 +493,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     if st.button("Esci", use_container_width=True):
-        _cookies.remove("nc_refresh")
+        _cookie_mgr.delete("nc_refresh")
         del st.session_state["user"]
         st.session_state.active_notebook = None
         st.session_state.chat_history = []
